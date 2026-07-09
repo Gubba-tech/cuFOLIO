@@ -14,7 +14,6 @@ import pandas as pd
 from .base_optimizer import BaseOptimizer
 from .portfolio import Portfolio
 from .qp_backend import (
-    max_constraint_violation,
     solve_compiled_qp_cuopt,
     solve_compiled_qp_osqp,
 )
@@ -78,7 +77,10 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
         if self.params.backend == "osqp":
             solution = solve_compiled_qp_osqp(self.compiled_qp)
         elif self.params.backend == "cuopt":
-            solution = solve_compiled_qp_cuopt(self.compiled_qp)
+            solution = solve_compiled_qp_cuopt(
+                self.compiled_qp,
+                solver_settings=solver_settings,
+            )
         else:
             raise ValueError(f"Unsupported QP backend: {self.params.backend}")
 
@@ -129,7 +131,7 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
                 self.params.lambda_l2,
                 self.params.short_budget,
                 turnover,
-                max_constraint_violation(self.compiled_qp, solution.x),
+                solution.max_constraint_violation,
                 factor_weights,
                 stock_weights,
                 tuple(self.compiled_qp.stock_mapping.shape),

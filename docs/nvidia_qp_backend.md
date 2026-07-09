@@ -19,15 +19,56 @@ CVXPY plus `cp.CUOPT` remains part of the existing Mean-CVaR LP workflow, where 
 
 ## Current MVP Status
 
-The first QP commit adds:
+The QP MVP now includes:
 
 - `QPParameters`
 - deterministic sparse QP compiler
 - explicit CPU validation backend named `osqp`
-- cuOpt backend guard
+- direct cuOpt Python QP backend
+- cuOpt backend guard with `GPUBackendUnavailable`
 - `QuadraticPortfolioOptimizer` skeleton returning cuFOLIO-style `(result_row, Portfolio)`
+- CPU and GPU tiny min-variance smoke tests
 
-The current `backend="cuopt"` behavior intentionally raises a clear error when cuOpt is unavailable and does not fall back to CPU. Direct compiled-QP execution through cuOpt is the next implementation step after the sparse compiler API stabilizes.
+When cuOpt is unavailable, `backend="cuopt"` raises a clear error and does not fall back to CPU.
+
+## CompiledQP Convention
+
+`CompiledQP` represents:
+
+```text
+minimize 0.5 * x.T @ Q @ x + q.T @ x
+```
+
+cuOpt's quadratic objective uses:
+
+```text
+x.T @ Q_cuopt @ x + c.T @ x
+```
+
+Therefore the backend maps:
+
+```text
+Q_cuopt = 0.5 * Q
+c = q
+```
+
+This convention is tested in `tests/test_qp_compiled_convention.py` and checked against the cuOpt objective value in `tests/test_qp_cuopt_backend.py`.
+
+## CompiledQP to cuOpt Problem
+
+The direct cuOpt backend translates `CompiledQP` as follows:
+
+1. Create one scalar cuOpt variable for each `CompiledQP.variable_names` entry.
+2. Pass every compiled variable lower/upper bound explicitly. This matters because cuOpt variables default to a nonnegative lower bound, while long-short and transformed QP variables can require negative lower bounds.
+3. Build the quadratic objective from `0.5 * CompiledQP.Q`.
+4. Build the linear objective from `CompiledQP.q`.
+5. Translate `CompiledQP.A`, `row_lower`, and `row_upper` into cuOpt `LinearExpression` constraints:
+   - equal finite lower/upper row bounds become `==`
+   - finite lower-only rows become `>=`
+   - finite upper-only rows become `<=`
+   - two-sided rows become one lower and one upper constraint
+6. Solve with cuOpt `SolverSettings`.
+7. Return raw `x`, status, objective value, solve time, total time, max constraint violation, and per-variable values.
 
 ## CPU Validation Policy
 
@@ -54,16 +95,19 @@ Do not silently use:
 
 This is required so reports and benchmarks cannot accidentally claim GPU results that were produced on CPU.
 
-## Next Backend Step
+## Current Limitations
 
-Translate `CompiledQP` into a cuOpt `Problem`:
+- GPU validation currently covers the tiny long-only minimum-variance QP.
+- CPU OSQP validation covers the same closed-form QP.
+- Mean-variance, l2, l1, long-short, max-Sharpe, and factor mapping compile paths exist in skeleton form but still need dedicated cuOpt validation tests before being called production-ready.
+- Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
 
-1. Add one scalar cuOpt variable per compiled variable, with compiled lower/upper bounds.
-2. Add equality rows from `A_eq x = b_eq` as `LinearExpression == rhs`.
-3. Add inequality rows from `A_ineq x <= b_ineq` as `LinearExpression <= rhs`.
-4. Add padded `QuadraticExpression` for `0.5 * x.T @ Q @ x`.
-5. Add linear objective term `q.T @ x`.
-6. Solve with `SolverSettings`.
-7. Return raw `x`, status, objective value, solve time, and total time.
+## Next Implementation Order
 
-Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
+1. Min-variance cuOpt validation beyond the tiny smoke case.
+2. Mean-variance objective.
+3. l2 regularization.
+4. l1 regularization with positive/negative auxiliary variables.
+5. Long-short constraints.
+6. Max-Sharpe QP reparameterization and recovery.
+7. `V` factor/managed-portfolio mapping.

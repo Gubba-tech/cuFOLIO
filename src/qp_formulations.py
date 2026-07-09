@@ -13,6 +13,8 @@ from scipy import sparse
 from .exceptions import QPCompilationError
 from .qp_parameters import QPParameters
 
+OBJECTIVE_CONVENTION = "0.5 * x.T @ Q @ x + q.T @ x"
+
 
 @dataclass(frozen=True)
 class VariableSlice:
@@ -32,7 +34,11 @@ class VariableSlice:
 
 @dataclass
 class CompiledQP:
-    """Standard-form sparse QP plus recovery metadata."""
+    """Standard-form sparse QP plus recovery metadata.
+
+    Objective convention:
+        minimize 0.5 * x.T @ Q @ x + q.T @ x
+    """
 
     Q: sparse.csr_matrix
     q: np.ndarray
@@ -42,6 +48,7 @@ class CompiledQP:
     b_ineq: np.ndarray
     lower: np.ndarray
     upper: np.ndarray
+    variable_names: list[str]
     variable_slices: dict[str, VariableSlice]
     stock_mapping: sparse.csr_matrix
     mean: np.ndarray
@@ -49,6 +56,7 @@ class CompiledQP:
     objective: str
     risk_free_rate: float
     constraint_names: list[str]
+    objective_convention: str = OBJECTIVE_CONVENTION
 
     @property
     def n_variables(self) -> int:
@@ -57,6 +65,31 @@ class CompiledQP:
     @property
     def n_constraints(self) -> int:
         return self.A_eq.shape[0] + self.A_ineq.shape[0]
+
+    @property
+    def A(self) -> sparse.csr_matrix:
+        """All linear constraints in row-bound form."""
+        return sparse.vstack([self.A_eq, self.A_ineq], format="csr")
+
+    @property
+    def row_lower(self) -> np.ndarray:
+        """Lower row bounds aligned with ``A``."""
+        return np.concatenate(
+            [
+                self.b_eq,
+                np.full(self.A_ineq.shape[0], -np.inf, dtype=float),
+            ]
+        )
+
+    @property
+    def row_upper(self) -> np.ndarray:
+        """Upper row bounds aligned with ``A``."""
+        return np.concatenate([self.b_eq, self.b_ineq])
+
+    def objective_value(self, x: np.ndarray) -> float:
+        """Evaluate the compiled QP objective convention."""
+        x = np.asarray(x, dtype=float).reshape(-1)
+        return float(0.5 * x @ (self.Q @ x) + self.q @ x)
 
     def recover_stock_weights(self, x: np.ndarray) -> np.ndarray:
         decision = x[self.variable_slices["decision"].slice]
@@ -305,7 +338,11 @@ def compile_portfolio_qp(
         names.append("short_budget")
 
     if needs_turnover:
-        previous = _require_vector(params.previous_weights, n_assets, "previous_weights")
+        previous = _require_vector(
+            params.previous_weights,
+            n_assets,
+            "previous_weights",
+        )
         _add_anchor_l1_constraint(
             eq_rows,
             eq_rhs,
@@ -357,6 +394,7 @@ def compile_portfolio_qp(
         b_ineq=np.asarray(ineq_rhs, dtype=float),
         lower=lower,
         upper=upper,
+        variable_names=_build_variable_names(slices, n_variables),
         variable_slices=slices,
         stock_mapping=sparse.csr_matrix(mapping),
         mean=mean,
@@ -432,7 +470,9 @@ def _require_vector(value, n_assets: int, name: str) -> np.ndarray:
         raise QPCompilationError(f"{name} is required for this QP option.")
     arr = np.asarray(value, dtype=float).reshape(-1)
     if arr.size != n_assets or not np.all(np.isfinite(arr)):
-        raise QPCompilationError(f"{name} must be a finite vector of length {n_assets}.")
+        raise QPCompilationError(
+            f"{name} must be a finite vector of length {n_assets}."
+        )
     return arr
 
 
@@ -440,6 +480,20 @@ def _rows_to_csr(rows: list[np.ndarray], n_variables: int) -> sparse.csr_matrix:
     if not rows:
         return sparse.csr_matrix((0, n_variables), dtype=float)
     return sparse.csr_matrix(np.vstack(rows))
+
+
+def _build_variable_names(
+    slices: dict[str, VariableSlice],
+    n_variables: int,
+) -> list[str]:
+    names = [""] * n_variables
+    for name, span in slices.items():
+        if span.size == 1:
+            names[span.start] = name
+        else:
+            for offset in range(span.size):
+                names[span.start + offset] = f"{name}_{offset}"
+    return names
 
 
 def _add_stock_bounds(
