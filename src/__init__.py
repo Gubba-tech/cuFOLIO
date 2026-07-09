@@ -21,6 +21,7 @@ from .base_parameters import BaseParameters
 from .cvar_data import CvarData
 from .cvar_parameters import CvarParameters
 from .mean_variance_parameters import MeanVarianceParameters
+from .qp_parameters import QPParameters
 from .settings import (
     ApiSettings,
     KDESettings,
@@ -33,6 +34,7 @@ __all__ = [
     "CvarData",
     "CvarParameters",
     "MeanVarianceParameters",
+    "QPParameters",
     "ApiSettings",
     "KDESettings",
     "ReturnsComputeSettings",
