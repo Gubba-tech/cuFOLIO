@@ -26,6 +26,51 @@ Use cuFOLIO as the implementation scaffold. Use the PortOpt paper and `Gubba-tec
 
 ## Required Checks
 
+### No uv Found on HPC
+
+Check Python first:
+
+```bash
+python --version
+```
+
+cuFOLIO requires Python `>=3.11`. If `uv` is missing, install it user-local:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+uv --version
+```
+
+Alternative:
+
+```bash
+python -m pip install --user uv
+export PATH="$HOME/.local/bin:$PATH"
+uv --version
+```
+
+If system Python is polluted by broken `pyarrow` / `pandas` packages:
+
+```bash
+export PYTHONNOUSERSITE=1
+unset PYTHONPATH
+```
+
+Fallback without `uv`:
+
+```bash
+python3.11 -m venv .venv --clear
+source .venv/bin/activate
+python -m pip install -U pip setuptools wheel
+python -m pip install -e ".[dev]"
+python scripts/smoke_qp_env.py
+python -m compileall -q src tests scripts
+pytest tests/test_qp_compiled_convention.py -q
+pytest tests/test_qp_osqp_validation_backend.py -q
+pytest -m "not gpu" -q
+```
+
 Run syntax checks:
 
 ```bash
