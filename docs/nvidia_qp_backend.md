@@ -59,7 +59,7 @@ This convention is tested in `tests/test_qp_compiled_convention.py` and checked 
 The direct cuOpt backend translates `CompiledQP` as follows:
 
 1. Create one scalar cuOpt variable for each `CompiledQP.variable_names` entry.
-2. Pass every compiled variable lower/upper bound explicitly. This matters because cuOpt variables default to a nonnegative lower bound, while long-short and transformed QP variables can require negative lower bounds.
+2. Pass every compiled variable lower/upper bound explicitly, even for variables that are logically unbounded. Do not rely on cuOpt defaults because default-bound behavior can vary by API/version, and long-short or transformed QP variables can require negative lower bounds.
 3. Build the quadratic objective from `0.5 * CompiledQP.Q`.
 4. Build the linear objective from `CompiledQP.q`.
 5. Translate `CompiledQP.A`, `row_lower`, and `row_upper` into cuOpt `LinearExpression` constraints:

@@ -1,6 +1,6 @@
 import numpy as np
 
-from cufolio.qp_backend import max_constraint_violation
+from cufolio.qp_backend import CuOptQPBackend, max_constraint_violation
 from cufolio.qp_formulations import OBJECTIVE_CONVENTION, compile_portfolio_qp
 from cufolio.qp_parameters import QPParameters
 
@@ -51,3 +51,32 @@ def test_max_constraint_violation_calculation():
 
     assert max_constraint_violation(compiled, feasible) <= 1e-12
     assert max_constraint_violation(compiled, infeasible) >= 0.5 - 1e-12
+
+
+def test_cuopt_variable_creation_passes_bounds_explicitly():
+    compiled = compile_portfolio_qp(
+        _tiny_returns_dict(),
+        QPParameters(objective="min_variance", backend="cuopt"),
+    )
+    compiled.lower[0] = -2.5
+    compiled.upper[0] = 3.5
+
+    class FakeProblem:
+        def __init__(self):
+            self.calls = []
+
+        def addVariable(self, **kwargs):
+            self.calls.append(kwargs)
+            return object()
+
+    fake_problem = FakeProblem()
+    CuOptQPBackend()._add_variables(fake_problem, compiled, continuous_type="CONT")
+
+    assert len(fake_problem.calls) == compiled.n_variables
+    for idx, call in enumerate(fake_problem.calls):
+        assert "lb" in call
+        assert "ub" in call
+        assert call["lb"] == float(compiled.lower[idx])
+        assert call["ub"] == float(compiled.upper[idx])
+    assert fake_problem.calls[0]["lb"] == -2.5
+    assert fake_problem.calls[0]["ub"] == 3.5
