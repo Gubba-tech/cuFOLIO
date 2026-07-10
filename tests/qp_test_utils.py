@@ -69,6 +69,20 @@ def relative_objective_gap(candidate: float, reference: float) -> float:
     return abs(candidate - reference) / max(1.0, abs(reference))
 
 
+def gross_exposure(compiled, x: np.ndarray) -> float:
+    return float(np.sum(np.abs(compiled.recover_stock_weights(x))))
+
+
+def assert_objective_gap_within(compiled, candidate, reference, tol: float = 1e-4):
+    assert (
+        relative_objective_gap(
+            compiled.objective_value(candidate.x),
+            compiled.objective_value(reference.x),
+        )
+        <= tol
+    )
+
+
 def assert_cuopt_matches_osqp(
     compiled,
     *,
@@ -81,13 +95,7 @@ def assert_cuopt_matches_osqp(
 
     assert_feasible_solution(compiled, osqp_solution, tol=constraint_tol)
     assert_feasible_solution(compiled, cuopt_solution, tol=constraint_tol)
-    assert (
-        relative_objective_gap(
-            compiled.objective_value(cuopt_solution.x),
-            compiled.objective_value(osqp_solution.x),
-        )
-        <= objective_tol
-    )
+    assert_objective_gap_within(compiled, cuopt_solution, osqp_solution, objective_tol)
     np.testing.assert_allclose(
         compiled.recover_stock_weights(cuopt_solution.x),
         compiled.recover_stock_weights(osqp_solution.x),

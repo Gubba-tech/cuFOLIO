@@ -42,9 +42,34 @@ Sprint 2 validates the direct QP backend for:
 
 Validation compares the compiled `CompiledQP` objective and constraints against the explicit OSQP validation backend, and runs the same cases through cuOpt when a GPU/cuOpt runtime is available.
 
-`l1`, long-short, max-Sharpe, and end-to-end `V` factor/managed-portfolio mapping remain next-step work and are not production-ready in the direct cuOpt QP backend yet. The generic `V.T @ V` l2 matrix increment is unit-tested, but that is not a production validation of full factor-mapping solves.
+At Sprint 2 close, `l1`, long-short, max-Sharpe, and end-to-end `V` factor/managed-portfolio mapping remained next-step work. Sprint 3 updates the l1 status below.
 
 Do not claim QP GPU speedups yet. Speedup claims require dedicated benchmark scripts and saved CSV artifacts.
+
+## Sprint 3 Validation Status
+
+Sprint 3 validates l1 regularization using explicit positive/negative auxiliary variables:
+
+```text
+p = V @ x
+p = y_plus - y_minus
+y_plus >= 0
+y_minus >= 0
+q[y_plus] += lambda_l1
+q[y_minus] += lambda_l1
+```
+
+No complementarity constraint is added; the l1 objective makes simultaneous positive and negative parts suboptimal.
+
+Sprint 3 validates:
+
+- stock-level l1 regularization
+- stock-level l1 plus l2-squared regularization
+- identity-mapping long-only fully invested l1 behavior
+- gross-exposure behavior when short positions are allowed by direct bounds
+- generic `V` compiler behavior for l1 auxiliary dimensions, equality rows, and l1/l2 matrix terms
+
+Generic `V` validation in Sprint 3 is compiler and small-QP validation. It is not an end-to-end production validation of an IPCA/PCA/AP-Trees managed-portfolio workflow.
 
 ## CompiledQP Convention
 
@@ -113,7 +138,12 @@ This is required so reports and benchmarks cannot accidentally claim GPU results
 ## Current Limitations
 
 - Sprint 2 validation covers long-only minimum variance, mean variance, target return, and l2-squared regularization.
-- `l1`, long-short, max-Sharpe, and end-to-end `V` factor/managed-portfolio mapping compile paths still need dedicated cuOpt validation tests before being called production-ready.
+- Sprint 3 validation covers l1 regularization and l1 plus l2-squared regularization.
+- Long-short budget constraints are not production-ready yet.
+- Turnover constraints are not production-ready yet.
+- Benchmark l1 exposure constraints are not production-ready yet.
+- Max-Sharpe QP is not production-ready yet.
+- End-to-end IPCA/PCA/AP-Trees factor workflows are not production-ready yet.
 - Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
 
 ## Validation Commands
@@ -130,6 +160,10 @@ uv run pytest tests/test_qp_mean_variance.py -q
 uv run pytest tests/test_qp_target_return.py -q
 uv run pytest tests/test_qp_l2_regularization.py -q
 uv run pytest tests/test_qp_backend_medium.py -q
+uv run pytest tests/test_qp_l1_regularization.py -q
+uv run pytest tests/test_qp_l1_mapping.py -q
+uv run pytest tests/test_qp_l1_l2_regularization.py -q
+uv run pytest tests/test_qp_backend_medium_l1.py -q
 uv run pytest -m "not gpu" -q
 ```
 
@@ -141,12 +175,12 @@ uv sync --extra cuda12 --extra dev
 # or
 uv sync --extra cuda13 --extra dev
 
-uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py -q
+uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py -q
 ```
 
 ## Next Implementation Order
 
-1. l1 regularization with positive/negative auxiliary variables.
-2. Long-short constraints.
+1. Long-short budget constraints.
+2. Turnover and benchmark l1 exposure constraints.
 3. Max-Sharpe QP reparameterization and recovery.
-4. End-to-end `V` factor/managed-portfolio mapping.
+4. End-to-end IPCA/PCA/AP-Trees factor workflows.
