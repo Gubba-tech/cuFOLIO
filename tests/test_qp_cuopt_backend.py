@@ -1,7 +1,6 @@
-import importlib.util
-
 import numpy as np
 import pytest
+from qp_test_utils import require_cuopt
 
 from cufolio.qp_backend import solve_compiled_qp_cuopt
 from cufolio.qp_formulations import compile_portfolio_qp
@@ -10,8 +9,7 @@ from cufolio.qp_parameters import QPParameters
 
 @pytest.mark.gpu
 def test_cuopt_backend_solves_tiny_min_variance_qp_directly():
-    if importlib.util.find_spec("cuopt") is None:
-        pytest.skip("cuOpt GPU runtime unavailable; QP GPU test skipped.")
+    require_cuopt()
 
     returns_dict = {
         "mean": np.array([0.0, 0.0, 0.0]),
@@ -26,7 +24,8 @@ def test_cuopt_backend_solves_tiny_min_variance_qp_directly():
     expected = np.array([1.0, 0.5, 0.25])
     expected = expected / expected.sum()
 
-    assert "optimal" in solution.status.lower()
+    assert solution.status == "optimal"
+    assert solution.raw_status is not None
     assert solution.solver_name == "cuopt_qp"
     assert abs(solution.x.sum() - 1.0) < 1e-6
     assert np.all(solution.x >= -1e-7)

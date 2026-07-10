@@ -27,9 +27,24 @@ The QP MVP now includes:
 - direct cuOpt Python QP backend
 - cuOpt backend guard with `GPUBackendUnavailable`
 - `QuadraticPortfolioOptimizer` skeleton returning cuFOLIO-style `(result_row, Portfolio)`
-- CPU and GPU tiny min-variance smoke tests
+- CPU OSQP validation tests and GPU cuOpt smoke tests
 
 When cuOpt is unavailable, `backend="cuopt"` raises a clear error and does not fall back to CPU.
+
+## Sprint 2 Validation Status
+
+Sprint 2 validates the direct QP backend for:
+
+- minimum variance
+- mean variance
+- target return
+- l2-squared regularization
+
+Validation compares the compiled `CompiledQP` objective and constraints against the explicit OSQP validation backend, and runs the same cases through cuOpt when a GPU/cuOpt runtime is available.
+
+`l1`, long-short, max-Sharpe, and end-to-end `V` factor/managed-portfolio mapping remain next-step work and are not production-ready in the direct cuOpt QP backend yet. The generic `V.T @ V` l2 matrix increment is unit-tested, but that is not a production validation of full factor-mapping solves.
+
+Do not claim QP GPU speedups yet. Speedup claims require dedicated benchmark scripts and saved CSV artifacts.
 
 ## CompiledQP Convention
 
@@ -59,7 +74,7 @@ This convention is tested in `tests/test_qp_compiled_convention.py` and checked 
 The direct cuOpt backend translates `CompiledQP` as follows:
 
 1. Create one scalar cuOpt variable for each `CompiledQP.variable_names` entry.
-2. Pass every compiled variable lower/upper bound explicitly, even for variables that are logically unbounded. Do not rely on cuOpt defaults because default-bound behavior can vary by API/version, and long-short or transformed QP variables can require negative lower bounds.
+2. Always pass variable bounds explicitly. Do not rely on cuOpt defaults, because default-bound behavior can vary by API/version and portfolio QP variables may require negative lower bounds.
 3. Build the quadratic objective from `0.5 * CompiledQP.Q`.
 4. Build the linear objective from `CompiledQP.q`.
 5. Translate `CompiledQP.A`, `row_lower`, and `row_upper` into cuOpt `LinearExpression` constraints:
@@ -97,17 +112,41 @@ This is required so reports and benchmarks cannot accidentally claim GPU results
 
 ## Current Limitations
 
-- GPU validation currently covers the tiny long-only minimum-variance QP.
-- CPU OSQP validation covers the same closed-form QP.
-- Mean-variance, l2, l1, long-short, max-Sharpe, and factor mapping compile paths exist in skeleton form but still need dedicated cuOpt validation tests before being called production-ready.
+- Sprint 2 validation covers long-only minimum variance, mean variance, target return, and l2-squared regularization.
+- `l1`, long-short, max-Sharpe, and end-to-end `V` factor/managed-portfolio mapping compile paths still need dedicated cuOpt validation tests before being called production-ready.
 - Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
+
+## Validation Commands
+
+CPU validation:
+
+```bash
+uv sync --extra dev
+uv run python scripts/smoke_qp_env.py
+uv run python -m compileall -q src tests scripts
+uv run pytest tests/test_qp_compiled_convention.py -q
+uv run pytest tests/test_qp_osqp_validation_backend.py -q
+uv run pytest tests/test_qp_mean_variance.py -q
+uv run pytest tests/test_qp_target_return.py -q
+uv run pytest tests/test_qp_l2_regularization.py -q
+uv run pytest tests/test_qp_backend_medium.py -q
+uv run pytest -m "not gpu" -q
+```
+
+GPU validation on a cuOpt-capable B40/H200 node:
+
+```bash
+# Choose one CUDA extra from nvidia-smi output. Do not mix them.
+uv sync --extra cuda12 --extra dev
+# or
+uv sync --extra cuda13 --extra dev
+
+uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py -q
+```
 
 ## Next Implementation Order
 
-1. Min-variance cuOpt validation beyond the tiny smoke case.
-2. Mean-variance objective.
-3. l2 regularization.
-4. l1 regularization with positive/negative auxiliary variables.
-5. Long-short constraints.
-6. Max-Sharpe QP reparameterization and recovery.
-7. `V` factor/managed-portfolio mapping.
+1. l1 regularization with positive/negative auxiliary variables.
+2. Long-short constraints.
+3. Max-Sharpe QP reparameterization and recovery.
+4. End-to-end `V` factor/managed-portfolio mapping.

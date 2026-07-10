@@ -1,6 +1,10 @@
 import numpy as np
 
-from cufolio.qp_backend import CuOptQPBackend, max_constraint_violation
+from cufolio.qp_backend import (
+    CuOptQPBackend,
+    max_constraint_violation,
+    normalize_qp_status,
+)
 from cufolio.qp_formulations import OBJECTIVE_CONVENTION, compile_portfolio_qp
 from cufolio.qp_parameters import QPParameters
 
@@ -80,3 +84,11 @@ def test_cuopt_variable_creation_passes_bounds_explicitly():
         assert call["ub"] == float(compiled.upper[idx])
     assert fake_problem.calls[0]["lb"] == -2.5
     assert fake_problem.calls[0]["ub"] == 3.5
+
+
+def test_qp_status_normalization_preserves_stable_optimal_label():
+    assert normalize_qp_status("OPTIMAL") == "optimal"
+    assert normalize_qp_status("optimal_inaccurate") == "optimal"
+    assert normalize_qp_status("Optimal With Tolerance") == "optimal"
+    assert normalize_qp_status("infeasible") == "infeasible"
+    assert normalize_qp_status("not_optimal") == "not_optimal"

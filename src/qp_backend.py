@@ -27,11 +27,34 @@ class QPSolution:
     total_time: float
     max_constraint_violation: float
     variable_values_by_name: dict[str, float]
+    raw_status: str | None = None
 
     @property
     def solver(self) -> str:
         """Backward-compatible solver label used by the optimizer."""
         return self.solver_name
+
+
+def normalize_qp_status(raw_status: str) -> str:
+    """Normalize solver-specific QP statuses into a stable public label."""
+
+    normalized = str(raw_status).strip().lower().replace("-", "_").replace(" ", "_")
+    if not normalized:
+        return "unknown"
+    if "infeasible" in normalized:
+        return "infeasible"
+    if "unbounded" in normalized:
+        return "unbounded"
+    known_optimal = {
+        "optimal",
+        "optimal_inaccurate",
+        "optimal_with_tolerance",
+        "locally_optimal",
+        "globally_optimal",
+    }
+    if normalized in known_optimal or normalized.startswith("optimal"):
+        return "optimal"
+    return normalized
 
 
 def solve_compiled_qp_osqp(compiled: CompiledQP) -> QPSolution:
@@ -66,9 +89,10 @@ def solve_compiled_qp_osqp(compiled: CompiledQP) -> QPSolution:
 
     stats = getattr(problem, "solver_stats", None)
     solve_time = getattr(stats, "solve_time", None) if stats is not None else None
+    raw_status = str(problem.status)
     return QPSolution(
         x=np.asarray(x.value, dtype=float).reshape(-1),
-        status=str(problem.status),
+        status=normalize_qp_status(raw_status),
         solver_name="OSQP",
         objective_value=float(problem.value),
         solve_time=float(solve_time) if solve_time is not None else None,
@@ -82,6 +106,7 @@ def solve_compiled_qp_osqp(compiled: CompiledQP) -> QPSolution:
                 np.asarray(x.value, dtype=float).reshape(-1),
             )
         ),
+        raw_status=raw_status,
     )
 
 
@@ -133,9 +158,10 @@ class CuOptQPBackend:
         problem.solve(settings)
         total_time = time.time() - total_start
 
-        status = getattr(problem.Status, "name", str(problem.Status))
-        if not self._is_accepted_status(status):
-            raise RuntimeError(f"cuOpt failed to solve QP. Status: {status}")
+        raw_status = getattr(problem.Status, "name", str(problem.Status))
+        status = normalize_qp_status(raw_status)
+        if not self._is_accepted_status(raw_status):
+            raise RuntimeError(f"cuOpt failed to solve QP. Status: {raw_status}")
 
         x = np.asarray([var.getValue() for var in variables], dtype=float)
         violation = max_constraint_violation(compiled, x)
@@ -148,6 +174,7 @@ class CuOptQPBackend:
             total_time=total_time,
             max_constraint_violation=violation,
             variable_values_by_name=dict(zip(compiled.variable_names, x)),
+            raw_status=raw_status,
         )
 
     def _add_variables(self, problem, compiled, continuous_type):
@@ -242,8 +269,7 @@ class CuOptQPBackend:
         )
 
     def _is_accepted_status(self, status: str) -> bool:
-        status = status.lower()
-        return any(fragment in status for fragment in self.accepted_status_fragments)
+        return normalize_qp_status(status) in self.accepted_status_fragments
 
 
 def solve_compiled_qp_cuopt(
