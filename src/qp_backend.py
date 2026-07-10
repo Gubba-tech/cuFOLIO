@@ -80,7 +80,21 @@ def solve_compiled_qp_osqp(compiled: CompiledQP) -> QPSolution:
 
     problem = cp.Problem(objective, constraints)
     start = time.time()
-    problem.solve(solver=cp.OSQP, eps_abs=1e-8, eps_rel=1e-8, max_iter=100000)
+    # Long-short position splits have flat auxiliary directions because the
+    # split variables are constrained but do not belong to the QP objective.
+    # Give OSQP's validation path enough iterations to resolve those directions
+    # without changing the compiled objective or adding complementarity.
+    max_iter = (
+        2_000_000
+        if {"pos", "neg"} <= compiled.variable_slices.keys()
+        else 100_000
+    )
+    problem.solve(
+        solver=cp.OSQP,
+        eps_abs=1e-8,
+        eps_rel=1e-8,
+        max_iter=max_iter,
+    )
     total_time = time.time() - start
     if x.value is None:
         raise RuntimeError(

@@ -125,6 +125,21 @@ uv run pytest -m gpu \
     -q
 ```
 
+Run Sprint 4 long-short validation:
+
+```bash
+uv run pytest tests/test_qp_long_short_constraints.py -q
+uv run pytest tests/test_qp_long_short_solve.py -q
+uv run pytest tests/test_qp_long_short_mapping.py -q
+uv run pytest tests/test_qp_backend_medium_long_short.py -q
+uv run pytest -m gpu \
+    tests/test_qp_long_short_constraints.py \
+    tests/test_qp_long_short_solve.py \
+    tests/test_qp_long_short_mapping.py \
+    tests/test_qp_backend_medium_long_short.py \
+    -q
+```
+
 ## Workflow
 
 1. Compile portfolio math into `CompiledQP`.
@@ -134,4 +149,5 @@ uv run pytest -m gpu \
 5. Add equality, lower-bounded, upper-bounded, and two-sided row constraints from the compiled row-bound form.
 6. For l1 regularization, introduce nonnegative positive/negative auxiliary variables, add `V @ x = y_plus - y_minus`, and add `lambda_l1` to both auxiliary linear objective blocks.
 7. For l1 plus l2-squared regularization, keep l1 as linear auxiliary terms and add `2 * lambda_l2 * V.T @ V` to the primary Q block.
-8. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
+8. For long-short budgets, introduce separate nonnegative `pos` and `neg` variables, add `V @ x = pos - neg`, and constrain their sums by `1 + short_budget` and `short_budget` respectively. Do not reuse l1 auxiliary variables or add complementarity constraints.
+9. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.

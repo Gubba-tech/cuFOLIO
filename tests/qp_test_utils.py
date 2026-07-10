@@ -73,6 +73,23 @@ def gross_exposure(compiled, x: np.ndarray) -> float:
     return float(np.sum(np.abs(compiled.recover_stock_weights(x))))
 
 
+def long_exposure(weights: np.ndarray) -> float:
+    return float(np.sum(np.maximum(np.asarray(weights, dtype=float), 0.0)))
+
+
+def short_exposure(weights: np.ndarray) -> float:
+    return float(np.sum(np.maximum(-np.asarray(weights, dtype=float), 0.0)))
+
+
+def assert_long_short_budget(
+    weights: np.ndarray,
+    short_budget: float,
+    tol: float = 1e-6,
+) -> None:
+    assert long_exposure(weights) <= 1.0 + short_budget + tol
+    assert short_exposure(weights) <= short_budget + tol
+
+
 def assert_objective_gap_within(compiled, candidate, reference, tol: float = 1e-4):
     assert (
         relative_objective_gap(

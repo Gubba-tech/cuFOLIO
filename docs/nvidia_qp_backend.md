@@ -1,6 +1,6 @@
 # NVIDIA QP Backend Route
 
-Date: 2026-07-09
+Date: 2026-07-10
 
 ## Decision
 
@@ -71,6 +71,38 @@ Sprint 3 validates:
 
 Generic `V` validation in Sprint 3 is compiler and small-QP validation. It is not an end-to-end production validation of an IPCA/PCA/AP-Trees managed-portfolio workflow.
 
+## Sprint 4 Validation Status
+
+Sprint 4 validates long-short budgets with independent position splits:
+
+```text
+p = V @ x
+p = pos - neg
+pos >= 0
+neg >= 0
+1.T @ pos <= 1 + short_budget
+1.T @ neg <= short_budget
+```
+
+The `pos`/`neg` variables are separate from the `l1_pos`/`l1_neg` regularization
+variables. No complementarity constraint is added. For a fixed portfolio, any
+additional simultaneous positive and negative split only tightens the budget
+constraints.
+
+Sprint 4 validates:
+
+- long-short budget constraints with explicit position bounds
+- stock-level minimum-variance, mean-variance, and target-return QPs
+- stock-level l1, l2-squared, and l1 plus l2-squared QPs with long-short budgets
+- `short_budget=0` equivalence to direct long-only bounds
+- generic `V` compiler and small-QP long-short behavior
+- deterministic medium-size (`N=20`) long-short QP cases
+
+Validation provenance is recorded in
+`docs/validation/sprint4_long_short_qp_validation.md`.
+
+This validation makes no QP speedup claim.
+
 ## CompiledQP Convention
 
 `CompiledQP` represents:
@@ -139,7 +171,6 @@ This is required so reports and benchmarks cannot accidentally claim GPU results
 
 - Sprint 2 validation covers long-only minimum variance, mean variance, target return, and l2-squared regularization.
 - Sprint 3 validation covers l1 regularization and l1 plus l2-squared regularization.
-- Long-short budget constraints are not production-ready yet.
 - Turnover constraints are not production-ready yet.
 - Benchmark l1 exposure constraints are not production-ready yet.
 - Max-Sharpe QP is not production-ready yet.
@@ -164,6 +195,10 @@ uv run pytest tests/test_qp_l1_regularization.py -q
 uv run pytest tests/test_qp_l1_mapping.py -q
 uv run pytest tests/test_qp_l1_l2_regularization.py -q
 uv run pytest tests/test_qp_backend_medium_l1.py -q
+uv run pytest tests/test_qp_long_short_constraints.py -q
+uv run pytest tests/test_qp_long_short_solve.py -q
+uv run pytest tests/test_qp_long_short_mapping.py -q
+uv run pytest tests/test_qp_backend_medium_long_short.py -q
 uv run pytest -m "not gpu" -q
 ```
 
@@ -175,12 +210,11 @@ uv sync --extra cuda12 --extra dev
 # or
 uv sync --extra cuda13 --extra dev
 
-uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py -q
+uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py -q
 ```
 
 ## Next Implementation Order
 
-1. Long-short budget constraints.
-2. Turnover and benchmark l1 exposure constraints.
-3. Max-Sharpe QP reparameterization and recovery.
-4. End-to-end IPCA/PCA/AP-Trees factor workflows.
+1. Turnover and benchmark l1 exposure constraints.
+2. Max-Sharpe QP reparameterization and recovery.
+3. End-to-end IPCA/PCA/AP-Trees factor workflows.

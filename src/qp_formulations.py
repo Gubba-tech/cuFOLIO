@@ -233,9 +233,10 @@ def compile_portfolio_qp(
 
     eq_rows: list[np.ndarray] = []
     eq_rhs: list[float] = []
+    eq_names: list[str] = []
     ineq_rows: list[np.ndarray] = []
     ineq_rhs: list[float] = []
-    names: list[str] = []
+    ineq_names: list[str] = []
 
     stock_matrix = np.asarray(mapping)
     ones_stock = np.ones(n_assets)
@@ -249,20 +250,20 @@ def compile_portfolio_qp(
         row[decision] = excess
         eq_rows.append(row)
         eq_rhs.append(1.0)
-        names.append("max_sharpe_excess_return")
+        eq_names.append("max_sharpe_excess_return")
 
         row = np.zeros(n_variables)
         row[decision] = stock_sum_row
         row[slices["scale"].slice] = -1.0
         eq_rows.append(row)
         eq_rhs.append(0.0)
-        names.append("scaled_budget")
+        eq_names.append("scaled_budget")
     else:
         row = np.zeros(n_variables)
         row[decision] = stock_sum_row
         eq_rows.append(row)
         eq_rhs.append(1.0)
-        names.append("fully_invested")
+        eq_names.append("fully_invested")
 
     lower_w = _expand_bound(params.w_min, n_assets, "w_min")
     upper_w = _expand_bound(params.w_max, n_assets, "w_max")
@@ -272,7 +273,7 @@ def compile_portfolio_qp(
     _add_stock_bounds(
         ineq_rows,
         ineq_rhs,
-        names,
+        ineq_names,
         stock_matrix,
         slices,
         n_variables,
@@ -288,13 +289,13 @@ def compile_portfolio_qp(
         row[decision] = -mean_decision
         ineq_rows.append(row)
         ineq_rhs.append(-float(params.target_return))
-        names.append("target_return")
+        ineq_names.append("target_return")
 
     if needs_l1:
         _add_split_equalities(
             eq_rows,
             eq_rhs,
-            names,
+            eq_names,
             stock_matrix,
             slices,
             n_variables,
@@ -307,7 +308,7 @@ def compile_portfolio_qp(
         _add_split_equalities(
             eq_rows,
             eq_rhs,
-            names,
+            eq_names,
             stock_matrix,
             slices,
             n_variables,
@@ -324,7 +325,7 @@ def compile_portfolio_qp(
             rhs = 1.0 + float(params.short_budget)
         ineq_rows.append(row)
         ineq_rhs.append(rhs)
-        names.append("long_budget")
+        ineq_names.append("long_budget")
 
         row = np.zeros(n_variables)
         row[slices["neg"].slice] = 1.0
@@ -335,7 +336,7 @@ def compile_portfolio_qp(
             rhs = float(params.short_budget)
         ineq_rows.append(row)
         ineq_rhs.append(rhs)
-        names.append("short_budget")
+        ineq_names.append("short_budget")
 
     if needs_turnover:
         previous = _require_vector(
@@ -348,7 +349,8 @@ def compile_portfolio_qp(
             eq_rhs,
             ineq_rows,
             ineq_rhs,
-            names,
+            eq_names,
+            ineq_names,
             stock_matrix,
             slices,
             n_variables,
@@ -369,7 +371,8 @@ def compile_portfolio_qp(
             eq_rhs,
             ineq_rows,
             ineq_rhs,
-            names,
+            eq_names,
+            ineq_names,
             stock_matrix,
             slices,
             n_variables,
@@ -382,7 +385,7 @@ def compile_portfolio_qp(
         )
 
     _add_factor_exposure_constraints(
-        ineq_rows, ineq_rhs, names, stock_matrix, slices, n_variables, params
+        ineq_rows, ineq_rhs, ineq_names, stock_matrix, slices, n_variables, params
     )
 
     return CompiledQP(
@@ -401,7 +404,7 @@ def compile_portfolio_qp(
         covariance=covariance,
         objective=params.objective,
         risk_free_rate=params.risk_free_rate,
-        constraint_names=names,
+        constraint_names=eq_names + ineq_names,
     )
 
 
@@ -560,7 +563,8 @@ def _add_anchor_l1_constraint(
     eq_rhs,
     ineq_rows,
     ineq_rhs,
-    names,
+    eq_names,
+    ineq_names,
     stock_matrix,
     slices,
     n_variables,
@@ -584,7 +588,7 @@ def _add_anchor_l1_constraint(
         row[slices[neg_name].start + i] = 1.0
         eq_rows.append(row)
         eq_rhs.append(rhs)
-        names.append(f"{prefix}_split_{i}")
+        eq_names.append(f"{prefix}_split_{i}")
 
     row = np.zeros(n_variables)
     row[slices[pos_name].slice] = 1.0
@@ -596,7 +600,7 @@ def _add_anchor_l1_constraint(
         rhs = budget
     ineq_rows.append(row)
     ineq_rhs.append(rhs)
-    names.append(f"{prefix}_budget")
+    ineq_names.append(f"{prefix}_budget")
 
 
 def _add_factor_exposure_constraints(
