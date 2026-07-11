@@ -13,6 +13,11 @@ layer. The following boundaries are intentional:
   is supported.
 - The examples and current validation artifacts make no QP speedup claim.
   Speedup statements require dedicated benchmark scripts and saved artifacts.
+- Sprint 9 benchmark inputs are deterministic synthetic/public data. Their
+  observed timing ratios are scoped to the generated artifact and hardware;
+  they are not general performance claims.
+- Benchmark artifacts do not establish real-data or rolling-production
+  performance, and they do not add CRSP/Compustat/IPCA/AP-Trees replication.
 - `backend="cuopt"` requires a working cuOpt GPU runtime. It never silently
   falls back to OSQP or another CPU solver.
 - Factor-space mode is explicit. It must be selected with

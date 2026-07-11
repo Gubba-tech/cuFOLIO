@@ -203,6 +203,23 @@ Design details are recorded in `docs/factor_space_qp_design.md`.
 
 This validation makes no QP speedup claim.
 
+## Sprint 9 Benchmark Scope
+
+Sprint 9 adds benchmark runners for stock-level QP, true factor-space QP, and
+synthetic rolling-window repeated solves. The runners write environment
+metadata plus CSV, JSONL, and Markdown artifacts with compile, solver-build,
+wall-clock solve, solver-reported solve, postprocess, and total timing.
+
+`--backend both` runs OSQP first and cuOpt second on the same compiled inputs.
+If cuOpt is unavailable, its result is recorded as skipped; OSQP is never used
+as a substitute for a requested cuOpt run. Generated summaries may show an
+`observed speed ratio in this benchmark run` only when both matching solves
+succeed. These synthetic/public artifacts do not justify a global QP speedup
+claim and do not add CRSP/Compustat/IPCA/AP-Trees replication.
+
+Design and run instructions are in `docs/qp_benchmark_design.md` and
+`docs/qp_benchmarks.md`.
+
 ## CompiledQP Convention
 
 `CompiledQP` represents:
@@ -338,10 +355,10 @@ uv run pytest -m gpu tests/test_qp_factor_space_max_sharpe.py tests/test_qp_fact
 
 ## Next Implementation Order
 
-1. cuFOLIO examples and notebooks.
-2. CPU/GPU benchmark scripts with saved CSV/JSON artifacts.
-3. README/project report speedup discussion only after benchmark artifacts exist.
-4. Optional full CRSP/Compustat/IPCA/AP-Trees replication.
+1. Run and review Sprint 9 CPU/GPU benchmark artifacts.
+2. Discuss only artifact-scoped observed ratios after review; do not add global
+   README QP speedup claims.
+3. Optional full CRSP/Compustat/IPCA/AP-Trees replication.
 
 Sprint 8 product examples and notebooks are documented in
 `docs/portopt_qp_quickstart.md` and `docs/portopt_qp_examples.md`. They do not

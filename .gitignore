@@ -55,3 +55,9 @@ nv-base-output-*.html
 /BENCHMARK.md
 eval-results/
 
+# Generated Sprint 9 QP benchmark artifacts
+artifacts/benchmarks/*
+!artifacts/benchmarks/README.md
+!artifacts/benchmarks/sample_summary.md
+!artifacts/benchmarks/reviewed/
+!artifacts/benchmarks/reviewed/**
