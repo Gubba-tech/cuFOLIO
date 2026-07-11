@@ -80,13 +80,21 @@ def solve_compiled_qp_osqp(compiled: CompiledQP) -> QPSolution:
 
     problem = cp.Problem(objective, constraints)
     start = time.time()
-    # Long-short position splits have flat auxiliary directions because the
-    # split variables are constrained but do not belong to the QP objective.
+    # Absolute-value split variables have flat auxiliary directions because
+    # the split variables are constrained but do not belong to the QP objective.
     # Give OSQP's validation path enough iterations to resolve those directions
     # without changing the compiled objective or adding complementarity.
+    split_names = {
+        "pos",
+        "neg",
+        "turnover_pos",
+        "turnover_neg",
+        "benchmark_pos",
+        "benchmark_neg",
+    }
     max_iter = (
         2_000_000
-        if {"pos", "neg"} <= compiled.variable_slices.keys()
+        if split_names.intersection(compiled.variable_slices)
         else 100_000
     )
     problem.solve(

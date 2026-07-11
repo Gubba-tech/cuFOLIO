@@ -158,6 +158,27 @@ uv run pytest -m gpu \
     -q
 ```
 
+Run Sprint 6 friction-constraint validation:
+
+```bash
+uv run pytest tests/test_qp_turnover_constraints.py -q
+uv run pytest tests/test_qp_turnover_solve.py -q
+uv run pytest tests/test_qp_benchmark_constraints.py -q
+uv run pytest tests/test_qp_benchmark_solve.py -q
+uv run pytest tests/test_qp_turnover_benchmark_mapping.py -q
+uv run pytest tests/test_qp_factor_exposure_constraints.py -q
+uv run pytest tests/test_qp_tracking_error_penalty.py -q
+uv run pytest tests/test_qp_backend_medium_friction_constraints.py -q
+uv run pytest -m gpu \
+    tests/test_qp_turnover_solve.py \
+    tests/test_qp_benchmark_solve.py \
+    tests/test_qp_turnover_benchmark_mapping.py \
+    tests/test_qp_factor_exposure_constraints.py \
+    tests/test_qp_tracking_error_penalty.py \
+    tests/test_qp_backend_medium_friction_constraints.py \
+    -q
+```
+
 ## Workflow
 
 1. Compile portfolio math into `CompiledQP`.
@@ -169,4 +190,6 @@ uv run pytest -m gpu \
 7. For l1 plus l2-squared regularization, keep l1 as linear auxiliary terms and add `2 * lambda_l2 * V.T @ V` to the primary Q block.
 8. For long-short budgets, introduce separate nonnegative `pos` and `neg` variables, add `V @ x = pos - neg`, and constrain their sums by `1 + short_budget` and `short_budget` respectively. Do not reuse l1 auxiliary variables or add complementarity constraints.
 9. For max-Sharpe, use `w_tilde` as the primary variable, add `excess_mu.T @ w_tilde = 1` and `1.T @ w_tilde - c = 0`, require `c > 0`, scale box/long-short constraints by `c`, and recover `w = w_tilde / c`.
-10. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
+10. For turnover and benchmark l1 exposure, use distinct nonnegative positive/negative auxiliaries and scale their anchor equalities and total budgets by `c` for max-Sharpe.
+11. For linear factor exposure, compile `B.T @ p <= upper` and `-B.T @ p <= -lower`, scaling both rows by `c` for max-Sharpe. Keep tracking error as a quadratic objective penalty; do not model a hard QCQP/SOCP bound as an ordinary QP.
+12. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.

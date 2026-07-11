@@ -831,9 +831,19 @@ def _add_factor_exposure_constraints(
         raise QPCompilationError(
             "factor_exposure_matrix must have shape (n_assets, n_exposures)."
         )
+    if not np.all(np.isfinite(B)):
+        raise QPCompilationError("factor_exposure_matrix must be finite.")
     exposure_matrix = B.T @ stock_matrix
-    lower = params.factor_exposure_lower
-    upper = params.factor_exposure_upper
+    lower = _factor_bound_for_validation(
+        params.factor_exposure_lower,
+        exposure_matrix.shape[0],
+        "factor_exposure_lower",
+    )
+    upper = _factor_bound_for_validation(
+        params.factor_exposure_upper,
+        exposure_matrix.shape[0],
+        "factor_exposure_upper",
+    )
     if lower is None and upper is None:
         raise QPCompilationError(
             "factor exposure constraints require lower and/or upper bounds."

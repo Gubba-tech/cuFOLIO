@@ -98,6 +98,62 @@ def assert_long_short_budget(
     assert short_exposure(weights) <= short_budget + tol
 
 
+def turnover(weights: np.ndarray, previous_weights: np.ndarray) -> float:
+    return float(
+        np.sum(
+            np.abs(
+                np.asarray(weights, dtype=float)
+                - np.asarray(previous_weights, dtype=float)
+            )
+        )
+    )
+
+
+def benchmark_l1_distance(
+    weights: np.ndarray,
+    benchmark_weights: np.ndarray,
+) -> float:
+    return turnover(weights, benchmark_weights)
+
+
+def assert_turnover_budget(
+    weights: np.ndarray,
+    previous_weights: np.ndarray,
+    budget: float,
+    tol: float = 1e-6,
+) -> None:
+    assert turnover(weights, previous_weights) <= budget + tol
+
+
+def assert_benchmark_l1_budget(
+    weights: np.ndarray,
+    benchmark_weights: np.ndarray,
+    budget: float,
+    tol: float = 1e-6,
+) -> None:
+    assert benchmark_l1_distance(weights, benchmark_weights) <= budget + tol
+
+
+def factor_exposures(weights: np.ndarray, factor_matrix: np.ndarray) -> np.ndarray:
+    return np.asarray(factor_matrix, dtype=float).T @ np.asarray(
+        weights, dtype=float
+    )
+
+
+def assert_factor_exposure_bounds(
+    weights: np.ndarray,
+    factor_matrix: np.ndarray,
+    lower: np.ndarray | None,
+    upper: np.ndarray | None,
+    tol: float = 1e-6,
+) -> None:
+    exposures = factor_exposures(weights, factor_matrix)
+    if lower is not None:
+        assert np.all(exposures >= np.asarray(lower, dtype=float) - tol)
+    if upper is not None:
+        assert np.all(exposures <= np.asarray(upper, dtype=float) + tol)
+
+
 def assert_objective_gap_within(compiled, candidate, reference, tol: float = 1e-4):
     assert (
         relative_objective_gap(

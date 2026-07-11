@@ -150,6 +150,35 @@ Validation provenance is recorded in
 
 This validation makes no QP speedup claim.
 
+## Sprint 6 Validation Status
+
+Sprint 6 validates the remaining practical linear and quadratic-objective
+constraints:
+
+- total turnover budgets with `turnover_pos`/`turnover_neg`
+- benchmark l1 exposure budgets with `benchmark_pos`/`benchmark_neg`
+- linear factor exposure lower and upper bounds
+- tracking-error quadratic objective penalties
+- stock-level ordinary QPs and max-Sharpe scaled QPs
+- generic `V` compiler and small-QP behavior
+
+Turnover and benchmark auxiliary variables remain distinct from l1 and
+long-short variables. Tracking error is implemented only as:
+
+```text
+lambda_tracking_error * (p - benchmark).T @ Sigma @ (p - benchmark)
+```
+
+with the corresponding QP matrix/vector terms. A hard tracking-error bound is
+QCQP/SOCP, not an ordinary QP, and is not production-ready. Individual
+per-asset turnover limits are future work; Sprint 6 validates only the total
+turnover budget.
+
+Validation provenance is recorded in
+`docs/validation/sprint6_friction_constraints_validation.md`.
+
+This validation makes no QP speedup claim.
+
 ## CompiledQP Convention
 
 `CompiledQP` represents:
@@ -218,8 +247,7 @@ This is required so reports and benchmarks cannot accidentally claim GPU results
 
 - Sprint 2 validation covers long-only minimum variance, mean variance, target return, and l2-squared regularization.
 - Sprint 3 validation covers l1 regularization and l1 plus l2-squared regularization.
-- Turnover constraints are not production-ready yet.
-- Benchmark l1 exposure constraints are not production-ready yet.
+- Individual per-asset turnover limits are not production-ready.
 - End-to-end IPCA/PCA/AP-Trees factor workflows are not production-ready yet.
 - Rolling-window benchmarks are not production-ready yet.
 - Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
@@ -252,6 +280,14 @@ uv run pytest tests/test_qp_max_sharpe_regularization.py -q
 uv run pytest tests/test_qp_max_sharpe_mapping.py -q
 uv run pytest tests/test_qp_max_sharpe_validation.py -q
 uv run pytest tests/test_qp_backend_medium_max_sharpe.py -q
+uv run pytest tests/test_qp_turnover_constraints.py -q
+uv run pytest tests/test_qp_turnover_solve.py -q
+uv run pytest tests/test_qp_benchmark_constraints.py -q
+uv run pytest tests/test_qp_benchmark_solve.py -q
+uv run pytest tests/test_qp_turnover_benchmark_mapping.py -q
+uv run pytest tests/test_qp_factor_exposure_constraints.py -q
+uv run pytest tests/test_qp_tracking_error_penalty.py -q
+uv run pytest tests/test_qp_backend_medium_friction_constraints.py -q
 uv run pytest -m "not gpu" -q
 ```
 
@@ -263,10 +299,12 @@ uv sync --extra cuda12 --extra dev
 # or
 uv sync --extra cuda13 --extra dev
 
-uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py tests/test_qp_max_sharpe_reparameterization.py tests/test_qp_max_sharpe_constraints.py tests/test_qp_max_sharpe_regularization.py tests/test_qp_max_sharpe_mapping.py tests/test_qp_backend_medium_max_sharpe.py -q
+uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py tests/test_qp_max_sharpe_reparameterization.py tests/test_qp_max_sharpe_constraints.py tests/test_qp_max_sharpe_regularization.py tests/test_qp_max_sharpe_mapping.py tests/test_qp_backend_medium_max_sharpe.py tests/test_qp_turnover_solve.py tests/test_qp_benchmark_solve.py tests/test_qp_turnover_benchmark_mapping.py tests/test_qp_factor_exposure_constraints.py tests/test_qp_tracking_error_penalty.py tests/test_qp_backend_medium_friction_constraints.py -q
 ```
 
 ## Next Implementation Order
 
-1. Turnover and benchmark l1 exposure constraints.
-2. End-to-end IPCA/PCA/AP-Trees factor workflows.
+1. End-to-end V factor workflows for PCA/RP-PCA/IPCA/AP-Trees.
+2. cuFOLIO examples and notebooks.
+3. Benchmark scripts and saved CSV/JSON artifacts.
+4. README/project report speedup discussion only after benchmark artifacts exist.
