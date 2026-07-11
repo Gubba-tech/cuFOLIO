@@ -287,3 +287,51 @@ The standard convention is `0.5*x.T@Q*x + q.T@x`, so regularization
 coefficients are interpreted under that convention. The l1 split uses
 `w_minus = -min(0,w) = max(-w,0)` and is aligned with the paper. The complete
 paper-alignment audit is `docs/portopt_paper_math_audit.md`.
+
+
+## Sprint 11 Final Deliverables
+
+Create and review the advisor-facing documents together:
+
+```bash
+uv run python scripts/smoke_qp_env.py
+uv run python -m compileall -q src tests scripts examples benchmarks
+uv run pytest tests/test_qp_public_api.py -q
+uv run pytest tests/test_qp_examples_smoke.py -q
+uv run pytest tests/test_qp_benchmarks_smoke.py -q
+uv run pytest -m "not gpu" -q
+uv run ruff check src tests examples scripts benchmarks
+```
+
+Run the CPU demo commands explicitly:
+
+```bash
+uv run python examples/qp_min_variance_quickstart.py --backend osqp
+uv run python examples/qp_max_sharpe_regularized_long_short.py --backend osqp
+uv run python examples/qp_factor_space_pca_demo.py --backend osqp
+```
+
+On a cuOpt-capable B40 or H200 node, select one matching CUDA extra and run
+the GPU command explicitly:
+
+```bash
+uv sync --extra cuda13 --extra dev
+uv run python examples/qp_max_sharpe_regularized_long_short.py --backend cuopt
+```
+
+Interpret benchmark output from `summary.md` only after reviewing the matching
+`environment.json`, status, feasibility, objective agreement, and dimensions:
+
+```bash
+uv run python benchmarks/summarize_qp_benchmarks.py \
+    --input-dir artifacts/benchmarks/<run>
+```
+
+Use `total_time_sec` for the end-to-end path and `solve_time_sec` for backend
+solve isolation. Ratios are observations scoped to a named artifact and
+hardware; never convert them into a global QP speedup claim. A `skipped` cuOpt
+row means the runtime was unavailable, not that OSQP replaced it. Do not claim
+full CRSP/Compustat/IPCA/AP-Trees replication, and do not alter the existing
+Mean-CVaR LP workflow while preparing these deliverables. The final report,
+demo, PR description, checklist, and interpretation note are under
+`docs/reports/`.

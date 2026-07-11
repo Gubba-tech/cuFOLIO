@@ -198,6 +198,17 @@ Validation commands and the complete example/notebook list are in
 [`docs/portopt_qp_quickstart.md`](docs/portopt_qp_quickstart.md) and
 [`docs/portopt_qp_examples.md`](docs/portopt_qp_examples.md).
 
+Advisor-facing Sprint 11 deliverables are collected in the
+[`PortOpt/cuFOLIO QP technical report`](docs/reports/portopt_cufolio_qp_technical_report.md),
+[`five-minute demo script`](docs/reports/advisor_demo_script.md),
+[`PR description`](docs/reports/pr_description_portopt_qp_extension.md), and
+[`release checklist`](docs/reports/release_checklist.md). Benchmark reading
+guidance is in the [`benchmark interpretation note`](docs/reports/benchmark_interpretation_note.md).
+The QP math convention remains documented in the
+[`paper math audit`](docs/portopt_paper_math_audit.md). These materials make no
+global QP speedup or full CRSP/Compustat/IPCA/AP-Trees replication claim; the
+existing Mean-CVaR performance narrative remains separate.
+
 ### Streamlit GTC Demo
 
 The Streamlit demo from the GTC branch is available under [`demo/`](demo/) as a dynamic rebalancing app.
