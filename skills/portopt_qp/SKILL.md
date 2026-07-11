@@ -173,6 +173,7 @@ uv run pytest tests/test_qp_benchmark_solve.py -q
 uv run pytest tests/test_qp_turnover_benchmark_mapping.py -q
 uv run pytest tests/test_qp_factor_exposure_constraints.py -q
 uv run pytest tests/test_qp_tracking_error_penalty.py -q
+uv run pytest tests/test_qp_max_sharpe_tracking_error_penalty.py -q
 uv run pytest tests/test_qp_backend_medium_friction_constraints.py -q
 uv run pytest -m gpu \
     tests/test_qp_turnover_solve.py \
@@ -180,6 +181,7 @@ uv run pytest -m gpu \
     tests/test_qp_turnover_benchmark_mapping.py \
     tests/test_qp_factor_exposure_constraints.py \
     tests/test_qp_tracking_error_penalty.py \
+    tests/test_qp_max_sharpe_tracking_error_penalty.py \
     tests/test_qp_backend_medium_friction_constraints.py \
     -q
 ```

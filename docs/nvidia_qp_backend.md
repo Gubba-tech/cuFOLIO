@@ -347,6 +347,7 @@ uv run pytest tests/test_qp_benchmark_solve.py -q
 uv run pytest tests/test_qp_turnover_benchmark_mapping.py -q
 uv run pytest tests/test_qp_factor_exposure_constraints.py -q
 uv run pytest tests/test_qp_tracking_error_penalty.py -q
+uv run pytest tests/test_qp_max_sharpe_tracking_error_penalty.py -q
 uv run pytest tests/test_qp_backend_medium_friction_constraints.py -q
 uv run pytest tests/test_qp_factor_space_compiler.py -q
 uv run pytest tests/test_qp_factor_space_max_sharpe.py -q
@@ -364,7 +365,7 @@ uv sync --extra cuda12 --extra dev
 # or
 uv sync --extra cuda13 --extra dev
 
-uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py tests/test_qp_max_sharpe_reparameterization.py tests/test_qp_max_sharpe_constraints.py tests/test_qp_max_sharpe_regularization.py tests/test_qp_max_sharpe_mapping.py tests/test_qp_backend_medium_max_sharpe.py tests/test_qp_turnover_solve.py tests/test_qp_benchmark_solve.py tests/test_qp_turnover_benchmark_mapping.py tests/test_qp_factor_exposure_constraints.py tests/test_qp_tracking_error_penalty.py tests/test_qp_backend_medium_friction_constraints.py -q
+uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py tests/test_qp_max_sharpe_reparameterization.py tests/test_qp_max_sharpe_constraints.py tests/test_qp_max_sharpe_regularization.py tests/test_qp_max_sharpe_mapping.py tests/test_qp_backend_medium_max_sharpe.py tests/test_qp_turnover_solve.py tests/test_qp_benchmark_solve.py tests/test_qp_turnover_benchmark_mapping.py tests/test_qp_factor_exposure_constraints.py tests/test_qp_tracking_error_penalty.py tests/test_qp_max_sharpe_tracking_error_penalty.py tests/test_qp_backend_medium_friction_constraints.py -q
 uv run pytest -m gpu tests/test_qp_factor_space_max_sharpe.py tests/test_qp_factor_space_friction_constraints.py tests/test_qp_pca_factor_workflow.py tests/test_qp_external_factor_adapter.py -q
 ```
 
