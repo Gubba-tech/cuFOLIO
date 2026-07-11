@@ -1,6 +1,6 @@
 # NVIDIA QP Backend Route
 
-Date: 2026-07-10
+Date: 2026-07-11
 
 ## Decision
 
@@ -103,6 +103,53 @@ Validation provenance is recorded in
 
 This validation makes no QP speedup claim.
 
+## Sprint 5 Validation Status
+
+Sprint 5 validates maximum Sharpe ratio through the linear reparameterization:
+
+```text
+w_tilde = c * w
+(mu - rf * 1).T @ w_tilde = 1
+1.T @ w_tilde - c = 0
+w = w_tilde / c
+```
+
+The compiled QP remains:
+
+```text
+minimize 0.5 * w_tilde.T @ Sigma @ w_tilde
+         + lambda_l1 * ||V @ w_tilde||_1
+         + lambda_l2 * ||V @ w_tilde||_2^2
+```
+
+Scaled box and long-short constraints use the same positive `c` variable. The
+compiler performs a linear pre-check that the supplied portfolio domain admits
+strictly positive excess return before producing the max-Sharpe QP. Recovery
+rejects non-finite or non-positive `c` values.
+
+For generic `V`, this implementation uses stock-space expected returns mapped
+consistently into decision space:
+
+```text
+excess_mu_stock.T @ V @ z_tilde = 1
+1.T @ V @ z_tilde - c = 0
+```
+
+Sprint 5 validates:
+
+- stock-level maximum-Sharpe QP and positive-scale recovery
+- scaled equality and box constraints
+- scaled long-short budgets
+- max-Sharpe l1, l2-squared, and l1 plus l2-squared regularization
+- generic `V` compiler and small-QP behavior
+- deterministic medium-size (`N=20`) cases
+- optimizer output for recovered weights, scale, excess return, status, and objective
+
+Validation provenance is recorded in
+`docs/validation/sprint5_max_sharpe_qp_validation.md`.
+
+This validation makes no QP speedup claim.
+
 ## CompiledQP Convention
 
 `CompiledQP` represents:
@@ -173,8 +220,8 @@ This is required so reports and benchmarks cannot accidentally claim GPU results
 - Sprint 3 validation covers l1 regularization and l1 plus l2-squared regularization.
 - Turnover constraints are not production-ready yet.
 - Benchmark l1 exposure constraints are not production-ready yet.
-- Max-Sharpe QP is not production-ready yet.
 - End-to-end IPCA/PCA/AP-Trees factor workflows are not production-ready yet.
+- Rolling-window benchmarks are not production-ready yet.
 - Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
 
 ## Validation Commands
@@ -199,6 +246,12 @@ uv run pytest tests/test_qp_long_short_constraints.py -q
 uv run pytest tests/test_qp_long_short_solve.py -q
 uv run pytest tests/test_qp_long_short_mapping.py -q
 uv run pytest tests/test_qp_backend_medium_long_short.py -q
+uv run pytest tests/test_qp_max_sharpe_reparameterization.py -q
+uv run pytest tests/test_qp_max_sharpe_constraints.py -q
+uv run pytest tests/test_qp_max_sharpe_regularization.py -q
+uv run pytest tests/test_qp_max_sharpe_mapping.py -q
+uv run pytest tests/test_qp_max_sharpe_validation.py -q
+uv run pytest tests/test_qp_backend_medium_max_sharpe.py -q
 uv run pytest -m "not gpu" -q
 ```
 
@@ -210,11 +263,10 @@ uv sync --extra cuda12 --extra dev
 # or
 uv sync --extra cuda13 --extra dev
 
-uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py -q
+uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py tests/test_qp_max_sharpe_reparameterization.py tests/test_qp_max_sharpe_constraints.py tests/test_qp_max_sharpe_regularization.py tests/test_qp_max_sharpe_mapping.py tests/test_qp_backend_medium_max_sharpe.py -q
 ```
 
 ## Next Implementation Order
 
 1. Turnover and benchmark l1 exposure constraints.
-2. Max-Sharpe QP reparameterization and recovery.
-3. End-to-end IPCA/PCA/AP-Trees factor workflows.
+2. End-to-end IPCA/PCA/AP-Trees factor workflows.

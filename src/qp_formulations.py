@@ -8,12 +8,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from scipy import sparse
+from scipy import optimize, sparse
 
 from .exceptions import QPCompilationError
 from .qp_parameters import QPParameters
 
 OBJECTIVE_CONVENTION = "0.5 * x.T @ Q @ x + q.T @ x"
+MAX_SHARPE_SCALE_EPS = 1e-12
 
 
 @dataclass(frozen=True)
@@ -91,16 +92,28 @@ class CompiledQP:
         x = np.asarray(x, dtype=float).reshape(-1)
         return float(0.5 * x @ (self.Q @ x) + self.q @ x)
 
+    def recover_scale(self, x: np.ndarray) -> float:
+        """Return the positive max-Sharpe reparameterization scale."""
+        if self.objective != "max_sharpe":
+            raise QPCompilationError("scale recovery is only valid for max_sharpe.")
+        x = np.asarray(x, dtype=float).reshape(-1)
+        c_value = float(x[self.variable_slices["scale"].slice][0])
+        if not np.isfinite(c_value) or c_value <= 0:
+            raise QPCompilationError(
+                f"max_sharpe recovery requires c > 0; got {c_value}."
+            )
+        return c_value
+
+    def recover_max_sharpe_weights(self, x: np.ndarray) -> np.ndarray:
+        """Recover fully invested weights from scaled max-Sharpe variables."""
+        decision = x[self.variable_slices["decision"].slice]
+        return np.asarray(self.stock_mapping @ decision).reshape(-1) / self.recover_scale(x)
+
     def recover_stock_weights(self, x: np.ndarray) -> np.ndarray:
         decision = x[self.variable_slices["decision"].slice]
         stock_scaled = np.asarray(self.stock_mapping @ decision).reshape(-1)
         if self.objective == "max_sharpe":
-            c_value = float(x[self.variable_slices["scale"].slice][0])
-            if c_value <= 0:
-                raise QPCompilationError(
-                    f"max_sharpe recovery requires c > 0; got {c_value}."
-                )
-            return stock_scaled / c_value
+            return self.recover_max_sharpe_weights(x)
         return stock_scaled
 
     def recover_factor_weights(self, x: np.ndarray) -> np.ndarray | None:
@@ -108,12 +121,7 @@ class CompiledQP:
             return None
         decision = x[self.variable_slices["decision"].slice]
         if self.objective == "max_sharpe":
-            c_value = float(x[self.variable_slices["scale"].slice][0])
-            if c_value <= 0:
-                raise QPCompilationError(
-                    f"max_sharpe recovery requires c > 0; got {c_value}."
-                )
-            return decision / c_value
+            return decision / self.recover_scale(x)
         return decision
 
 
@@ -123,6 +131,8 @@ def compile_portfolio_qp(
 ) -> CompiledQP:
     """Compile a portfolio problem into sparse QP standard form."""
 
+    if "mean" not in returns_dict:
+        raise QPCompilationError("returns_dict must include 'mean' for QP objectives.")
     mean = _as_vector(returns_dict["mean"], "mean")
     covariance = _as_square_matrix(returns_dict["covariance"], "covariance")
     n_assets = mean.size
@@ -137,6 +147,22 @@ def compile_portfolio_qp(
     n_decision = mapping.shape[1]
     mean_decision = np.asarray(mapping.T @ mean).reshape(-1)
     cov_decision = np.asarray(mapping.T @ covariance @ mapping)
+    stock_matrix = np.asarray(mapping)
+    ones_stock = np.ones(n_assets)
+    stock_sum_row = ones_stock @ stock_matrix
+
+    lower_w = _expand_bound(params.w_min, n_assets, "w_min")
+    upper_w = _expand_bound(params.w_max, n_assets, "w_max")
+    if np.any(lower_w > upper_w):
+        raise QPCompilationError("w_min must be <= w_max for every asset.")
+    if params.objective == "max_sharpe":
+        _validate_max_sharpe_excess_feasibility(
+            mean,
+            stock_matrix,
+            lower_w,
+            upper_w,
+            params,
+        )
 
     slices: dict[str, VariableSlice] = {}
     cursor = 0
@@ -217,7 +243,7 @@ def compile_portfolio_qp(
     lower = np.full(n_variables, -np.inf)
     upper = np.full(n_variables, np.inf)
     if params.objective == "max_sharpe":
-        lower[slices["scale"].slice] = 1e-12
+        lower[slices["scale"].slice] = MAX_SHARPE_SCALE_EPS
     for name in (
         "l1_pos",
         "l1_neg",
@@ -238,14 +264,8 @@ def compile_portfolio_qp(
     ineq_rhs: list[float] = []
     ineq_names: list[str] = []
 
-    stock_matrix = np.asarray(mapping)
-    ones_stock = np.ones(n_assets)
-    stock_sum_row = ones_stock @ stock_matrix
-
     if params.objective == "max_sharpe":
         excess = mean_decision - params.risk_free_rate * stock_sum_row
-        if np.linalg.norm(excess, ord=np.inf) <= 1e-14:
-            raise QPCompilationError("max_sharpe requires nonzero excess returns.")
         row = np.zeros(n_variables)
         row[decision] = excess
         eq_rows.append(row)
@@ -264,11 +284,6 @@ def compile_portfolio_qp(
         eq_rows.append(row)
         eq_rhs.append(1.0)
         eq_names.append("fully_invested")
-
-    lower_w = _expand_bound(params.w_min, n_assets, "w_min")
-    upper_w = _expand_bound(params.w_max, n_assets, "w_max")
-    if np.any(lower_w > upper_w):
-        raise QPCompilationError("w_min must be <= w_max for every asset.")
 
     _add_stock_bounds(
         ineq_rows,
@@ -477,6 +492,208 @@ def _require_vector(value, n_assets: int, name: str) -> np.ndarray:
             f"{name} must be a finite vector of length {n_assets}."
         )
     return arr
+
+
+def _validate_max_sharpe_excess_feasibility(
+    mean: np.ndarray,
+    stock_matrix: np.ndarray,
+    lower_w: np.ndarray,
+    upper_w: np.ndarray,
+    params: QPParameters,
+) -> None:
+    """Check that the original portfolio domain admits positive excess return.
+
+    The check is a linear feasibility/max-excess problem in the unscaled
+    portfolio variables. It is a compile-time input validation step, not the
+    production QP solve and not a backend fallback.
+    """
+
+    risk_free_rate = float(params.risk_free_rate)
+    if not np.isfinite(risk_free_rate):
+        raise QPCompilationError("risk_free_rate must be finite for max_sharpe.")
+
+    n_assets, n_decision = stock_matrix.shape
+    cursor = n_decision
+    decision = slice(0, n_decision)
+    aux_slices: list[tuple[slice, slice, np.ndarray, float]] = []
+    split_slices: tuple[slice, slice] | None = None
+    if params.short_budget is not None:
+        pos = slice(cursor, cursor + n_assets)
+        cursor += n_assets
+        neg = slice(cursor, cursor + n_assets)
+        cursor += n_assets
+        split_slices = (pos, neg)
+
+    if params.turnover_budget is not None:
+        previous = _require_vector(
+            params.previous_weights,
+            n_assets,
+            "previous_weights",
+        )
+        pos = slice(cursor, cursor + n_assets)
+        cursor += n_assets
+        neg = slice(cursor, cursor + n_assets)
+        cursor += n_assets
+        aux_slices.append((pos, neg, previous, float(params.turnover_budget)))
+
+    if params.benchmark_l1_budget is not None:
+        benchmark = _require_vector(
+            params.benchmark_weights,
+            n_assets,
+            "benchmark_weights",
+        )
+        pos = slice(cursor, cursor + n_assets)
+        cursor += n_assets
+        neg = slice(cursor, cursor + n_assets)
+        cursor += n_assets
+        aux_slices.append((pos, neg, benchmark, float(params.benchmark_l1_budget)))
+
+    objective = np.zeros(cursor, dtype=float)
+    objective[decision] = -stock_matrix.T @ (mean - risk_free_rate)
+    equality_rows: list[np.ndarray] = []
+    equality_rhs: list[float] = []
+    inequality_rows: list[np.ndarray] = []
+    inequality_rhs: list[float] = []
+
+    row = np.zeros(cursor, dtype=float)
+    row[decision] = np.ones(n_assets) @ stock_matrix
+    equality_rows.append(row)
+    equality_rhs.append(1.0)
+
+    for asset_idx in range(n_assets):
+        if np.isfinite(upper_w[asset_idx]):
+            row = np.zeros(cursor, dtype=float)
+            row[decision] = stock_matrix[asset_idx]
+            inequality_rows.append(row)
+            inequality_rhs.append(float(upper_w[asset_idx]))
+        if np.isfinite(lower_w[asset_idx]):
+            row = np.zeros(cursor, dtype=float)
+            row[decision] = -stock_matrix[asset_idx]
+            inequality_rows.append(row)
+            inequality_rhs.append(float(-lower_w[asset_idx]))
+
+    if split_slices is not None:
+        pos, neg = split_slices
+        for asset_idx in range(n_assets):
+            row = np.zeros(cursor, dtype=float)
+            row[decision] = stock_matrix[asset_idx]
+            row[pos.start + asset_idx] = -1.0
+            row[neg.start + asset_idx] = 1.0
+            equality_rows.append(row)
+            equality_rhs.append(0.0)
+
+        row = np.zeros(cursor, dtype=float)
+        row[pos] = 1.0
+        inequality_rows.append(row)
+        inequality_rhs.append(1.0 + float(params.short_budget))
+
+        row = np.zeros(cursor, dtype=float)
+        row[neg] = 1.0
+        inequality_rows.append(row)
+        inequality_rhs.append(float(params.short_budget))
+
+    for pos, neg, anchor, budget in aux_slices:
+        for asset_idx in range(n_assets):
+            row = np.zeros(cursor, dtype=float)
+            row[decision] = stock_matrix[asset_idx]
+            row[pos.start + asset_idx] = -1.0
+            row[neg.start + asset_idx] = 1.0
+            equality_rows.append(row)
+            equality_rhs.append(float(anchor[asset_idx]))
+        row = np.zeros(cursor, dtype=float)
+        row[pos] = 1.0
+        row[neg] = 1.0
+        inequality_rows.append(row)
+        inequality_rhs.append(budget)
+
+    exposure_matrix = _factor_exposure_matrix_for_validation(
+        stock_matrix, params
+    )
+    if exposure_matrix is not None:
+        lower = _factor_bound_for_validation(
+            params.factor_exposure_lower,
+            exposure_matrix.shape[0],
+            "factor_exposure_lower",
+        )
+        upper = _factor_bound_for_validation(
+            params.factor_exposure_upper,
+            exposure_matrix.shape[0],
+            "factor_exposure_upper",
+        )
+        if lower is None and upper is None:
+            raise QPCompilationError(
+                "factor exposure constraints require lower and/or upper bounds."
+            )
+        for factor_idx in range(exposure_matrix.shape[0]):
+            if upper is not None and np.isfinite(upper[factor_idx]):
+                row = np.zeros(cursor, dtype=float)
+                row[decision] = exposure_matrix[factor_idx]
+                inequality_rows.append(row)
+                inequality_rhs.append(float(upper[factor_idx]))
+            if lower is not None and np.isfinite(lower[factor_idx]):
+                row = np.zeros(cursor, dtype=float)
+                row[decision] = -exposure_matrix[factor_idx]
+                inequality_rows.append(row)
+                inequality_rhs.append(float(-lower[factor_idx]))
+
+    result = optimize.linprog(
+        objective,
+        A_ub=np.vstack(inequality_rows) if inequality_rows else None,
+        b_ub=np.asarray(inequality_rhs, dtype=float) if inequality_rhs else None,
+        A_eq=np.vstack(equality_rows),
+        b_eq=np.asarray(equality_rhs, dtype=float),
+        bounds=[(None, None)] * n_decision
+        + [(0.0, None)] * (cursor - n_decision),
+        method="highs",
+    )
+    if result.status == 2:
+        raise QPCompilationError(
+            "max_sharpe has no feasible fully invested portfolio under the "
+            "supplied constraints."
+        )
+    if result.status not in {0, 3}:
+        raise QPCompilationError(
+            "max_sharpe excess-return feasibility check failed: "
+            f"{result.message}"
+        )
+    if result.status == 3:
+        return
+
+    max_excess = float(-result.fun)
+    if not np.isfinite(max_excess) or max_excess <= MAX_SHARPE_SCALE_EPS:
+        raise QPCompilationError(
+            "max_sharpe requires a feasible portfolio with strictly positive "
+            "excess return."
+        )
+
+
+def _factor_exposure_matrix_for_validation(
+    stock_matrix: np.ndarray,
+    params: QPParameters,
+) -> np.ndarray | None:
+    if params.factor_exposure_matrix is None:
+        return None
+    matrix = np.asarray(params.factor_exposure_matrix, dtype=float)
+    if matrix.ndim != 2 or matrix.shape[0] != stock_matrix.shape[0]:
+        raise QPCompilationError(
+            "factor_exposure_matrix must have shape (n_assets, n_exposures)."
+        )
+    if not np.all(np.isfinite(matrix)):
+        raise QPCompilationError("factor_exposure_matrix must be finite.")
+    return matrix.T @ stock_matrix
+
+
+def _factor_bound_for_validation(
+    value,
+    n_factors: int,
+    name: str,
+) -> np.ndarray | None:
+    if value is None:
+        return None
+    bound = np.asarray(value, dtype=float).reshape(-1)
+    if bound.size != n_factors or np.any(np.isnan(bound)):
+        raise QPCompilationError(f"{name} must have length {n_factors}.")
+    return bound
 
 
 def _rows_to_csr(rows: list[np.ndarray], n_variables: int) -> sparse.csr_matrix:

@@ -32,6 +32,14 @@ def medium_returns_dict(n_assets: int = 20):
     return {"mean": mean, "covariance": covariance}
 
 
+def max_sharpe_medium_returns_dict(n_assets: int = 20):
+    rng = np.random.default_rng(123)
+    design = rng.normal(size=(n_assets, n_assets))
+    covariance = design.T @ design + 1e-3 * np.eye(n_assets)
+    mean = rng.normal(size=n_assets) * 0.01 + 0.02
+    return {"mean": mean, "covariance": covariance}
+
+
 def require_cuopt():
     if not cuopt_gpu_runtime_available():
         pytest.skip(GPU_SKIP_REASON)

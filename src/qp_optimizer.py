@@ -49,10 +49,13 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
             "solver",
             "objective",
             "status",
+            "raw_status",
             "solve_time",
             "total_time",
             "objective_value",
+            "c_scale",
             "expected_return",
+            "excess_return",
             "variance",
             "volatility",
             "sharpe",
@@ -62,6 +65,7 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
             "turnover",
             "max_constraint_violation",
             "factor_weights",
+            "recovered_weights",
             "stock_weights",
             "mapping_matrix_shape",
         ]
@@ -106,6 +110,11 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
         volatility = float(np.sqrt(max(variance, 0.0)))
         excess_return = expected_return - self.params.risk_free_rate
         sharpe = excess_return / volatility if volatility > 0 else np.nan
+        c_scale = (
+            self.compiled_qp.recover_scale(solution.x)
+            if self.params.objective == "max_sharpe"
+            else np.nan
+        )
 
         previous = self.params.previous_weights
         turnover = (
@@ -120,10 +129,13 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
                 solution.solver,
                 self.params.objective,
                 solution.status,
+                solution.raw_status,
                 solution.solve_time,
                 solution.total_time,
                 solution.objective_value,
+                c_scale,
                 expected_return,
+                excess_return,
                 variance,
                 volatility,
                 sharpe,
@@ -133,6 +145,7 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
                 turnover,
                 solution.max_constraint_violation,
                 factor_weights,
+                stock_weights,
                 stock_weights,
                 tuple(self.compiled_qp.stock_mapping.shape),
             ],

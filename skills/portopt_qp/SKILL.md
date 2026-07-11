@@ -140,6 +140,24 @@ uv run pytest -m gpu \
     -q
 ```
 
+Run Sprint 5 max-Sharpe validation:
+
+```bash
+uv run pytest tests/test_qp_max_sharpe_reparameterization.py -q
+uv run pytest tests/test_qp_max_sharpe_constraints.py -q
+uv run pytest tests/test_qp_max_sharpe_regularization.py -q
+uv run pytest tests/test_qp_max_sharpe_mapping.py -q
+uv run pytest tests/test_qp_max_sharpe_validation.py -q
+uv run pytest tests/test_qp_backend_medium_max_sharpe.py -q
+uv run pytest -m gpu \
+    tests/test_qp_max_sharpe_reparameterization.py \
+    tests/test_qp_max_sharpe_constraints.py \
+    tests/test_qp_max_sharpe_regularization.py \
+    tests/test_qp_max_sharpe_mapping.py \
+    tests/test_qp_backend_medium_max_sharpe.py \
+    -q
+```
+
 ## Workflow
 
 1. Compile portfolio math into `CompiledQP`.
@@ -150,4 +168,5 @@ uv run pytest -m gpu \
 6. For l1 regularization, introduce nonnegative positive/negative auxiliary variables, add `V @ x = y_plus - y_minus`, and add `lambda_l1` to both auxiliary linear objective blocks.
 7. For l1 plus l2-squared regularization, keep l1 as linear auxiliary terms and add `2 * lambda_l2 * V.T @ V` to the primary Q block.
 8. For long-short budgets, introduce separate nonnegative `pos` and `neg` variables, add `V @ x = pos - neg`, and constrain their sums by `1 + short_budget` and `short_budget` respectively. Do not reuse l1 auxiliary variables or add complementarity constraints.
-9. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
+9. For max-Sharpe, use `w_tilde` as the primary variable, add `excess_mu.T @ w_tilde = 1` and `1.T @ w_tilde - c = 0`, require `c > 0`, scale box/long-short constraints by `c`, and recover `w = w_tilde / c`.
+10. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
