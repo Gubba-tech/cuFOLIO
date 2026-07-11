@@ -78,6 +78,19 @@ q += -2 * lambda_tracking_error * V.T @ Sigma_stock @ benchmark
 
 The factor covariance is not silently reused as a stock tracking covariance.
 
+For factor-space max-Sharpe, tracking error is homogeneous in the scaled
+decision and scale variable:
+
+```text
+lambda_te * (V @ z_tilde - c * benchmark).T
+    @ Sigma_stock @ (V @ z_tilde - c * benchmark)
+```
+
+Its Q block uses `V.T @ Sigma_stock @ V`, cross terms use
+`-V.T @ Sigma_stock @ benchmark`, and the scale diagonal uses
+`benchmark.T @ Sigma_stock @ benchmark`. The ordinary-QP linear benchmark term
+is not added to max-Sharpe `q`.
+
 ## Workflow Adapters
 
 `build_external_factor_qp_data` accepts externally estimated factor returns and

@@ -82,3 +82,8 @@ QP speedup statement is added by this sprint.
 
 Large generated artifacts are ignored by default. Small reviewed summaries may
 be placed under `artifacts/benchmarks/reviewed/`.
+
+Benchmark objective and regularization values follow the implementation's
+`0.5*x.T@Q*x + q.T@x` convention. Math alignment, including the homogeneous
+max-Sharpe tracking-error penalty, is documented in
+[`docs/portopt_paper_math_audit.md`](portopt_paper_math_audit.md).

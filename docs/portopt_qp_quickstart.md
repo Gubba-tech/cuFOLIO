@@ -60,6 +60,15 @@ Use `mapping_mode="factor_space"` explicitly when the supplied mean and
 covariance are factor statistics. External RP-PCA, IPCA, or AP-Trees outputs
 can use `build_external_factor_qp_data(factor_returns, stock_mapping)`.
 
+## Math Conventions
+
+Compiled objectives use `0.5*x.T@Q*x + q.T@x`; regularization coefficients are
+interpreted under this convention. The l1 split uses
+`w_minus = -min(0,w) = max(-w,0)`. Max-Sharpe tracking error uses the scaled
+homogeneous form `(p_tilde - c*b).T@Sigma@(p_tilde - c*b)`, not the ordinary
+unscaled benchmark anchor. The full paper-alignment audit is in
+[`docs/portopt_paper_math_audit.md`](portopt_paper_math_audit.md).
+
 ## Validation
 
 ```bash

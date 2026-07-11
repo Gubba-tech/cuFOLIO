@@ -104,6 +104,14 @@ MAX_SHARPE_CASES = [
         },
     ),
     (
+        "max_sharpe_tracking_error",
+        {
+            "objective": "max_sharpe",
+            "benchmark_weights": _anchors()[1],
+            "lambda_tracking_error": 0.10,
+        },
+    ),
+    (
         "max_sharpe_factor_exposure",
         {"objective": "max_sharpe", **_factor_options()},
     ),
@@ -120,6 +128,7 @@ MAX_SHARPE_CASES = [
             "turnover_budget": 0.5,
             "benchmark_weights": _anchors()[1],
             "benchmark_l1_budget": 0.5,
+            "lambda_tracking_error": 0.10,
         },
     ),
 ]

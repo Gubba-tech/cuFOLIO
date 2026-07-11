@@ -159,6 +159,15 @@ optimization workflows. It supports:
 - deterministic PCA factor data and external factor adapters for supplied
   RP-PCA/IPCA/AP-Trees outputs.
 
+The implementation uses the standard compiled objective
+`0.5*x.T@Q*x + q.T@x`; regularization coefficients are interpreted under this
+convention and may need rescaling when compared with formulas without the
+leading `0.5`. The l1 split uses `w_minus = -min(0,w) = max(-w,0)`, aligned
+with the paper. Max-Sharpe tracking error uses the homogeneous scaled form
+`(p_tilde-c*b).T@Sigma@(p_tilde-c*b)`. See
+[`docs/portopt_paper_math_audit.md`](docs/portopt_paper_math_audit.md) for the
+paper-alignment notes.
+
 The existing Mean-CVaR section above remains the scenario-based LP workflow.
 The QP extension is complementary and does not replace Mean-CVaR. It does not
 claim full CRSP/Compustat/IPCA/AP-Trees replication, hard tracking-error

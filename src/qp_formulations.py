@@ -34,6 +34,108 @@ class VariableSlice:
 
 
 @dataclass
+class _CompiledQPObjectiveBuilder:
+    """Mutable sparse objective blocks used while compiling a QP."""
+
+    Q: sparse.lil_matrix
+    q: np.ndarray
+
+
+def add_tracking_error_penalty(
+    compiled_builder: _CompiledQPObjectiveBuilder,
+    decision_slice: slice | VariableSlice,
+    mapping_matrix: np.ndarray | sparse.spmatrix | None,
+    tracking_covariance: np.ndarray,
+    benchmark_weights: np.ndarray,
+    lambda_tracking_error: float,
+    objective: str,
+    scale_index: int | None = None,
+) -> None:
+    """Add an ordinary or homogeneous max-Sharpe tracking-error penalty.
+
+    The ordinary QP penalty is ``lambda * (M x - b).T Sigma (M x - b)``.
+    Max-Sharpe uses the homogeneous scaled form
+    ``lambda * (M x_tilde - c*b).T Sigma (M x_tilde - c*b)``.
+    """
+
+    if lambda_tracking_error < 0:
+        raise QPCompilationError("lambda_tracking_error must be non-negative.")
+    if isinstance(decision_slice, VariableSlice):
+        decision_slice = decision_slice.slice
+    if not isinstance(decision_slice, slice):
+        raise QPCompilationError("decision_slice must be a slice or VariableSlice.")
+    if decision_slice.start is None or decision_slice.stop is None:
+        raise QPCompilationError("decision_slice must have explicit bounds.")
+
+    sigma = np.asarray(tracking_covariance, dtype=float)
+    if sigma.ndim != 2 or sigma.shape[0] != sigma.shape[1]:
+        raise QPCompilationError("tracking_covariance must be a square matrix.")
+    if not np.all(np.isfinite(sigma)):
+        raise QPCompilationError("tracking_covariance must be finite.")
+    sigma = 0.5 * (sigma + sigma.T)
+
+    benchmark = np.asarray(benchmark_weights, dtype=float).reshape(-1)
+    if benchmark.size != sigma.shape[0] or not np.all(np.isfinite(benchmark)):
+        raise QPCompilationError(
+            "benchmark_weights must be a finite vector matching tracking_covariance."
+        )
+
+    if mapping_matrix is None:
+        mapping = np.eye(sigma.shape[0], dtype=float)
+    elif sparse.issparse(mapping_matrix):
+        mapping = np.asarray(mapping_matrix.toarray(), dtype=float)
+    else:
+        mapping = np.asarray(mapping_matrix, dtype=float)
+    if (
+        mapping.ndim != 2
+        or mapping.shape[0] != sigma.shape[0]
+        or not np.all(np.isfinite(mapping))
+    ):
+        raise QPCompilationError(
+            "mapping_matrix must have shape (n_assets, n_decision) and be finite."
+        )
+
+    n_decision = decision_slice.stop - decision_slice.start
+    if mapping.shape[1] != n_decision:
+        raise QPCompilationError(
+            "mapping_matrix columns must match the decision slice size."
+        )
+    if compiled_builder.Q.shape[0] != compiled_builder.Q.shape[1]:
+        raise QPCompilationError("objective Q must be square.")
+    if compiled_builder.Q.shape[0] != compiled_builder.q.size:
+        raise QPCompilationError("objective Q and q dimensions must match.")
+    if decision_slice.stop > compiled_builder.q.size:
+        raise QPCompilationError("decision_slice exceeds objective dimensions.")
+
+    quadratic_scale = 2.0 * float(lambda_tracking_error)
+    q_xx = quadratic_scale * (mapping.T @ sigma @ mapping)
+    existing = compiled_builder.Q[decision_slice, decision_slice].toarray()
+    compiled_builder.Q[decision_slice, decision_slice] = existing + q_xx
+
+    q_xc = -quadratic_scale * (mapping.T @ sigma @ benchmark)
+    if objective == "max_sharpe":
+        if scale_index is None:
+            raise QPCompilationError(
+                "max_sharpe tracking-error penalty requires scale_index."
+            )
+        if not isinstance(scale_index, (int, np.integer)) or not (
+            0 <= int(scale_index) < compiled_builder.q.size
+        ):
+            raise QPCompilationError("scale_index must be a valid objective index.")
+        scale_index = int(scale_index)
+        for offset, value in enumerate(q_xc):
+            decision_index = decision_slice.start + offset
+            compiled_builder.Q[decision_index, scale_index] += float(value)
+            compiled_builder.Q[scale_index, decision_index] += float(value)
+        q_cc = quadratic_scale * float(benchmark @ sigma @ benchmark)
+        compiled_builder.Q[scale_index, scale_index] += q_cc
+        return
+    if objective not in {"min_variance", "mean_variance", "target_return"}:
+        raise QPCompilationError(f"Unsupported objective: {objective}")
+    compiled_builder.q[decision_slice] += q_xc
+
+
+@dataclass
 class CompiledQP:
     """Standard-form sparse QP plus recovery metadata.
 
@@ -208,6 +310,7 @@ def compile_portfolio_qp(
     n_variables = cursor
     Q = sparse.lil_matrix((n_variables, n_variables), dtype=float)
     q = np.zeros(n_variables, dtype=float)
+    objective_builder = _CompiledQPObjectiveBuilder(Q=Q, q=q)
     decision = slices["decision"].slice
 
     Q[decision, decision] = cov_decision
@@ -227,15 +330,20 @@ def compile_portfolio_qp(
                 "tracking-error penalty requires stock_covariance or "
                 "tracking_covariance in factor_space mode."
             )
-        Q[decision, decision] = (
-            Q[decision, decision]
-            + 2.0
-            * params.lambda_tracking_error
-            * np.asarray(mapping.T @ tracking_covariance @ mapping)
+        add_tracking_error_penalty(
+            objective_builder,
+            decision,
+            mapping,
+            tracking_covariance,
+            benchmark,
+            params.lambda_tracking_error,
+            params.objective,
+            scale_index=(
+                slices["scale"].start
+                if params.objective == "max_sharpe"
+                else None
+            ),
         )
-        q[decision] += -2.0 * params.lambda_tracking_error * np.asarray(
-            mapping.T @ tracking_covariance @ benchmark
-        ).reshape(-1)
 
     if params.objective == "mean_variance":
         q[decision] += -params.risk_aversion * mean_decision

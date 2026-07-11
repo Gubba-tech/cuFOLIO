@@ -93,6 +93,25 @@ def test_tracking_error_requires_benchmark_weights():
         )
 
 
+def test_tracking_error_penalty_ordinary_factor_space_requires_stock_covariance():
+    returns_dict = {
+        "factor_mean": np.array([0.04, 0.03]),
+        "factor_covariance": np.diag([0.04, 0.06]),
+        "stock_mapping": np.ones((4, 2)) / 4.0,
+    }
+    with pytest.raises(QPCompilationError, match="stock_covariance"):
+        compile_portfolio_qp(
+            returns_dict,
+            QPParameters(
+                mapping_mode="factor_space",
+                V=returns_dict["stock_mapping"],
+                benchmark_weights=_benchmark(),
+                lambda_tracking_error=0.4,
+                backend="osqp",
+            ),
+        )
+
+
 def test_tracking_error_penalty_osqp_solution_feasible():
     compiled = compile_portfolio_qp(small_returns_dict(), _params())
     solution = solve_compiled_qp_osqp(compiled)

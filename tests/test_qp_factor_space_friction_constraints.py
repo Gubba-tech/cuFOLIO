@@ -140,6 +140,26 @@ def test_factor_space_tracking_error_matrix_terms_use_stock_covariance():
     )
 
 
+def test_factor_space_max_sharpe_tracking_error_osqp_solution_feasible():
+    returns_dict = {
+        **_returns(),
+        "stock_covariance": np.diag(np.linspace(0.02, 0.07, 6)),
+    }
+    params = _params(
+        objective="max_sharpe",
+        previous_weights=None,
+        turnover_budget=None,
+        lambda_tracking_error=0.2,
+    )
+    compiled = compile_portfolio_qp(returns_dict, params)
+    solution = solve_compiled_qp_osqp(compiled)
+    weights = compiled.recover_stock_weights(solution.x)
+
+    assert_feasible_solution(compiled, solution, tol=1e-5)
+    np.testing.assert_allclose(weights.sum(), 1.0, atol=1e-5)
+    assert compiled.mean @ compiled.recover_factor_weights(solution.x) > 0.0
+
+
 @pytest.mark.gpu
 def test_factor_space_friction_cuopt_matches_osqp_when_available():
     require_cuopt()
@@ -159,6 +179,41 @@ def test_factor_space_friction_cuopt_matches_osqp_when_available():
     cuopt_solution = solve_compiled_qp_cuopt(cuopt_compiled)
 
     assert_feasible_solution(osqp_compiled, osqp_solution)
+    assert_feasible_solution(cuopt_compiled, cuopt_solution, tol=1e-5)
+    assert_objective_gap_within(
+        cuopt_compiled,
+        cuopt_solution,
+        osqp_solution,
+        tol=5e-4,
+    )
+
+
+@pytest.mark.gpu
+def test_factor_space_max_sharpe_tracking_error_cuopt_matches_osqp_when_available():
+    require_cuopt()
+    returns_dict = {
+        **_returns(),
+        "stock_covariance": np.diag(np.linspace(0.02, 0.07, 6)),
+    }
+    osqp_params = _params(
+        objective="max_sharpe",
+        previous_weights=None,
+        turnover_budget=None,
+        lambda_tracking_error=0.2,
+    )
+    cuopt_params = _params(
+        backend="cuopt",
+        objective="max_sharpe",
+        previous_weights=None,
+        turnover_budget=None,
+        lambda_tracking_error=0.2,
+    )
+    osqp_compiled = compile_portfolio_qp(returns_dict, osqp_params)
+    cuopt_compiled = compile_portfolio_qp(returns_dict, cuopt_params)
+    osqp_solution = solve_compiled_qp_osqp(osqp_compiled)
+    cuopt_solution = solve_compiled_qp_cuopt(cuopt_compiled)
+
+    assert_feasible_solution(osqp_compiled, osqp_solution, tol=1e-5)
     assert_feasible_solution(cuopt_compiled, cuopt_solution, tol=1e-5)
     assert_objective_gap_within(
         cuopt_compiled,

@@ -220,6 +220,21 @@ claim and do not add CRSP/Compustat/IPCA/AP-Trees replication.
 Design and run instructions are in `docs/qp_benchmark_design.md` and
 `docs/qp_benchmarks.md`.
 
+## Sprint 10 Math Hardening
+
+The max-Sharpe tracking-error penalty now uses the homogeneous scaled form:
+
+```text
+lambda_te * (M @ x_tilde - c*b).T @ Sigma @ (M @ x_tilde - c*b)
+```
+
+The implementation adds the symmetric `[x_tilde, c]` Q block and does not add
+the ordinary-QP linear benchmark anchor to max-Sharpe `q`. Ordinary-QP
+tracking-error terms are unchanged. All coefficients remain interpreted under
+`0.5*x.T@Q*x + q.T@x`; the l1 split uses
+`w_minus = -min(0,w) = max(-w,0)`. See
+`docs/portopt_paper_math_audit.md` for the complete paper-alignment audit.
+
 ## CompiledQP Convention
 
 `CompiledQP` represents:

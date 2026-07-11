@@ -275,4 +275,13 @@ has no CPU fallback. See `docs/qp_benchmark_design.md` and
 10. For turnover and benchmark l1 exposure, use distinct nonnegative positive/negative auxiliaries and scale their anchor equalities and total budgets by `c` for max-Sharpe.
 11. For linear factor exposure, compile `B.T @ p <= upper` and `-B.T @ p <= -lower`, scaling both rows by `c` for max-Sharpe. Keep tracking error as a quadratic objective penalty; do not model a hard QCQP/SOCP bound as an ordinary QP.
 12. Use `mapping_mode="factor_space"` explicitly for factor mean/covariance inputs. In this mode, use `factor_mean.T @ z_tilde - risk_free_rate * c = 1` for max-Sharpe and apply all stock constraints through `V @ z`.
-13. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
+13. For max-Sharpe tracking error, compile the homogeneous penalty
+    `lambda_te * (M @ x_tilde - c*b).T @ Sigma @ (M @ x_tilde - c*b)` as a
+    symmetric Q block over `[x_tilde, c]`; do not add the ordinary QP linear
+    benchmark term to `q`.
+14. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
+
+The standard convention is `0.5*x.T@Q*x + q.T@x`, so regularization
+coefficients are interpreted under that convention. The l1 split uses
+`w_minus = -min(0,w) = max(-w,0)` and is aligned with the paper. The complete
+paper-alignment audit is `docs/portopt_paper_math_audit.md`.

@@ -22,3 +22,6 @@ layer. The following boundaries are intentional:
   falls back to OSQP or another CPU solver.
 - Factor-space mode is explicit. It must be selected with
   `mapping_mode="factor_space"`; stock-space behavior remains the default.
+- All QP and regularization coefficients use the compiled
+  `0.5*x.T@Q*x + q.T@x` convention. Max-Sharpe tracking error uses the
+  homogeneous scaled exposure `p_tilde - c*b`.
