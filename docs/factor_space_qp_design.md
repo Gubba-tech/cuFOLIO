@@ -87,3 +87,21 @@ deterministic PCA workflow for public or synthetic return matrices.
 
 This sprint does not claim full CRSP/Compustat replication, RP-PCA/IPCA
 replication, AP-Trees replication, or QP speedups.
+
+## Product and Demo Path
+
+The public examples and notebooks use the same explicit factor-space contract:
+
+```python
+params = QPParameters(
+    mapping_mode="factor_space",
+    V=data.stock_mapping,
+    backend="osqp",
+)
+```
+
+`qp_factor_space_pca_demo.py` demonstrates deterministic PCA data. The external
+adapter demo accepts factor returns and `V` produced by an upstream RP-PCA,
+IPCA, or AP-Trees implementation; it does not estimate those models. These
+artifacts are onboarding and validation examples, not claims of full research
+pipeline replication or QP performance improvement.

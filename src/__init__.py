@@ -20,12 +20,14 @@ version = "1.0.0"
 from .base_parameters import BaseParameters
 from .cvar_data import CvarData
 from .cvar_parameters import CvarParameters
+from .exceptions import GPUBackendUnavailable, QPCompilationError, QPSolveError
 from .mean_variance_parameters import MeanVarianceParameters
 from .qp_factor_workflows import (
     FactorModelQPData,
     build_external_factor_qp_data,
     build_pca_factor_qp_data,
 )
+from .qp_optimizer import QuadraticPortfolioOptimizer
 from .qp_parameters import QPParameters
 from .settings import (
     ApiSettings,
@@ -40,6 +42,10 @@ __all__ = [
     "CvarParameters",
     "MeanVarianceParameters",
     "QPParameters",
+    "QuadraticPortfolioOptimizer",
+    "GPUBackendUnavailable",
+    "QPCompilationError",
+    "QPSolveError",
     "FactorModelQPData",
     "build_external_factor_qp_data",
     "build_pca_factor_qp_data",

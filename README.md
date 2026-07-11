@@ -145,6 +145,50 @@ Explore the example notebooks in the [`notebooks/`](notebooks/) directory:
 - **`efficient_frontier.ipynb`**: A quick tutorial on how to generate efficient frontier.
 - **`rebalancing_strategies.ipynb`** Introduction to dynamic re-balancing and examples of testing strategies
 
+### Unified QP Portfolio Optimization Extension
+
+cuFOLIO also includes a PortOpt unified QP extension for explicit portfolio
+optimization workflows. It supports:
+
+- minimum variance, mean variance, target return, and max-Sharpe QPs;
+- l1, l2, and combined l1+l2 regularization;
+- long-short budgets, total turnover, and benchmark l1 exposure budgets;
+- linear factor exposure bounds and tracking-error objective penalties;
+- true factor-space covariance/mean inputs through an explicit stock mapping
+  `V`;
+- deterministic PCA factor data and external factor adapters for supplied
+  RP-PCA/IPCA/AP-Trees outputs.
+
+The existing Mean-CVaR section above remains the scenario-based LP workflow.
+The QP extension is complementary and does not replace Mean-CVaR. It does not
+claim full CRSP/Compustat/IPCA/AP-Trees replication, hard tracking-error
+constraints, per-asset turnover limits, or QP speedups. The historical
+Mean-CVaR and scenario-generation performance statements above are separate
+from this QP extension.
+
+Install and run the CPU-first examples:
+
+```bash
+uv sync --extra dev
+uv run python examples/qp_min_variance_quickstart.py --backend osqp
+uv run python examples/qp_max_sharpe_regularized_long_short.py --backend osqp
+uv run python examples/qp_factor_space_pca_demo.py --backend osqp
+```
+
+On a cuOpt-capable GPU host, select one CUDA extra based on `nvidia-smi` and
+request the GPU backend explicitly:
+
+```bash
+uv sync --extra cuda12 --extra dev
+# or: uv sync --extra cuda13 --extra dev
+uv run python examples/qp_min_variance_quickstart.py --backend cuopt
+uv run python examples/qp_max_sharpe_regularized_long_short.py --backend cuopt
+```
+
+Validation commands and the complete example/notebook list are in
+[`docs/portopt_qp_quickstart.md`](docs/portopt_qp_quickstart.md) and
+[`docs/portopt_qp_examples.md`](docs/portopt_qp_examples.md).
+
 ### Streamlit GTC Demo
 
 The Streamlit demo from the GTC branch is available under [`demo/`](demo/) as a dynamic rebalancing app.

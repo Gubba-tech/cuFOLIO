@@ -272,7 +272,10 @@ This is required so reports and benchmarks cannot accidentally claim GPU results
 - Sprint 2 validation covers long-only minimum variance, mean variance, target return, and l2-squared regularization.
 - Sprint 3 validation covers l1 regularization and l1 plus l2-squared regularization.
 - Individual per-asset turnover limits are not production-ready.
-- Full end-to-end IPCA/PCA/AP-Trees factor workflows are not production-ready.
+- Sprint 7 validates true factor-space QP workflows, deterministic PCA factor
+  data, and external factor adapters for RP-PCA/IPCA/AP-Trees outputs supplied
+  as `factor_returns` plus stock-mapping `V`. Full CRSP/Compustat/IPCA/AP-Trees
+  replication is not claimed.
 - Full CRSP/Compustat replication is not production-ready.
 - Rolling-window benchmarks are not production-ready yet.
 - Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
@@ -335,7 +338,11 @@ uv run pytest -m gpu tests/test_qp_factor_space_max_sharpe.py tests/test_qp_fact
 
 ## Next Implementation Order
 
-1. End-to-end V factor workflows for PCA/RP-PCA/IPCA/AP-Trees.
-2. cuFOLIO examples and notebooks.
-3. Benchmark scripts and saved CSV/JSON artifacts.
-4. README/project report speedup discussion only after benchmark artifacts exist.
+1. cuFOLIO examples and notebooks.
+2. CPU/GPU benchmark scripts with saved CSV/JSON artifacts.
+3. README/project report speedup discussion only after benchmark artifacts exist.
+4. Optional full CRSP/Compustat/IPCA/AP-Trees replication.
+
+Sprint 8 product examples and notebooks are documented in
+`docs/portopt_qp_quickstart.md` and `docs/portopt_qp_examples.md`. They do not
+constitute benchmark artifacts and make no QP speedup claim.

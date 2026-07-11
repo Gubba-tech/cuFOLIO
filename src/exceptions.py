@@ -10,3 +10,7 @@ class GPUBackendUnavailable(RuntimeError):
 
 class QPCompilationError(ValueError):
     """Raised when portfolio inputs cannot be compiled into a valid QP."""
+
+
+class QPSolveError(RuntimeError):
+    """Raised when a compiled QP backend cannot produce a valid solution."""
