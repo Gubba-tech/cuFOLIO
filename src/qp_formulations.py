@@ -58,6 +58,8 @@ class CompiledQP:
     risk_free_rate: float
     constraint_names: list[str]
     objective_convention: str = OBJECTIVE_CONVENTION
+    mapping_mode: str = "stock_space"
+    stock_covariance: np.ndarray | None = None
 
     @property
     def n_variables(self) -> int:
@@ -117,7 +119,10 @@ class CompiledQP:
         return stock_scaled
 
     def recover_factor_weights(self, x: np.ndarray) -> np.ndarray | None:
-        if self.stock_mapping.shape[1] == self.stock_mapping.shape[0]:
+        if (
+            self.mapping_mode == "stock_space"
+            and self.stock_mapping.shape[1] == self.stock_mapping.shape[0]
+        ):
             return None
         decision = x[self.variable_slices["decision"].slice]
         if self.objective == "max_sharpe":
@@ -131,22 +136,18 @@ def compile_portfolio_qp(
 ) -> CompiledQP:
     """Compile a portfolio problem into sparse QP standard form."""
 
-    if "mean" not in returns_dict:
-        raise QPCompilationError("returns_dict must include 'mean' for QP objectives.")
-    mean = _as_vector(returns_dict["mean"], "mean")
-    covariance = _as_square_matrix(returns_dict["covariance"], "covariance")
-    n_assets = mean.size
-    if covariance.shape != (n_assets, n_assets):
-        raise QPCompilationError(
-            "covariance shape must match mean length; "
-            f"got {covariance.shape} and {n_assets}."
-        )
-    covariance = _make_psd_symmetric(covariance)
-
-    mapping = _mapping_matrix(params.V, n_assets)
+    mean, covariance, mapping, stock_covariance = _prepare_qp_inputs(
+        returns_dict,
+        params,
+    )
+    n_assets = mapping.shape[0]
     n_decision = mapping.shape[1]
-    mean_decision = np.asarray(mapping.T @ mean).reshape(-1)
-    cov_decision = np.asarray(mapping.T @ covariance @ mapping)
+    if params.mapping_mode == "factor_space":
+        mean_decision = mean
+        cov_decision = covariance
+    else:
+        mean_decision = np.asarray(mapping.T @ mean).reshape(-1)
+        cov_decision = np.asarray(mapping.T @ covariance @ mapping)
     stock_matrix = np.asarray(mapping)
     ones_stock = np.ones(n_assets)
     stock_sum_row = ones_stock @ stock_matrix
@@ -162,6 +163,7 @@ def compile_portfolio_qp(
             lower_w,
             upper_w,
             params,
+            mean_decision=mean_decision,
         )
 
     slices: dict[str, VariableSlice] = {}
@@ -219,14 +221,20 @@ def compile_portfolio_qp(
         benchmark = _require_vector(
             params.benchmark_weights, n_assets, "benchmark_weights"
         )
+        tracking_covariance = stock_covariance
+        if tracking_covariance is None:
+            raise QPCompilationError(
+                "tracking-error penalty requires stock_covariance or "
+                "tracking_covariance in factor_space mode."
+            )
         Q[decision, decision] = (
             Q[decision, decision]
             + 2.0
             * params.lambda_tracking_error
-            * np.asarray(mapping.T @ covariance @ mapping)
+            * np.asarray(mapping.T @ tracking_covariance @ mapping)
         )
         q[decision] += -2.0 * params.lambda_tracking_error * np.asarray(
-            mapping.T @ covariance @ benchmark
+            mapping.T @ tracking_covariance @ benchmark
         ).reshape(-1)
 
     if params.objective == "mean_variance":
@@ -265,9 +273,12 @@ def compile_portfolio_qp(
     ineq_names: list[str] = []
 
     if params.objective == "max_sharpe":
-        excess = mean_decision - params.risk_free_rate * stock_sum_row
         row = np.zeros(n_variables)
-        row[decision] = excess
+        row[decision] = mean_decision
+        if params.mapping_mode == "stock_space":
+            row[decision] -= params.risk_free_rate * stock_sum_row
+        else:
+            row[slices["scale"].slice] = -params.risk_free_rate
         eq_rows.append(row)
         eq_rhs.append(1.0)
         eq_names.append("max_sharpe_excess_return")
@@ -420,6 +431,8 @@ def compile_portfolio_qp(
         objective=params.objective,
         risk_free_rate=params.risk_free_rate,
         constraint_names=eq_names + ineq_names,
+        mapping_mode=params.mapping_mode,
+        stock_covariance=stock_covariance,
     )
 
 
@@ -428,6 +441,95 @@ def _as_vector(value, name: str) -> np.ndarray:
     if arr.size == 0 or not np.all(np.isfinite(arr)):
         raise QPCompilationError(f"{name} must be a non-empty finite vector.")
     return arr
+
+
+def _prepare_qp_inputs(
+    returns_dict: dict,
+    params: QPParameters,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
+    """Return objective data, stock mapping, and optional stock covariance."""
+
+    if params.mapping_mode == "factor_space":
+        factor_mean_value = returns_dict.get("factor_mean", returns_dict.get("mean"))
+        factor_covariance_value = returns_dict.get(
+            "factor_covariance",
+            returns_dict.get("covariance"),
+        )
+        if factor_mean_value is None:
+            raise QPCompilationError(
+                "factor_space mode requires factor_mean or mean."
+            )
+        if factor_covariance_value is None:
+            raise QPCompilationError(
+                "factor_space mode requires factor_covariance or covariance."
+            )
+        factor_mean = _as_vector(factor_mean_value, "factor_mean")
+        factor_covariance = _as_square_matrix(
+            factor_covariance_value,
+            "factor_covariance",
+        )
+        if factor_covariance.shape != (factor_mean.size, factor_mean.size):
+            raise QPCompilationError(
+                "factor_covariance shape must match factor_mean length; "
+                f"got {factor_covariance.shape} and {factor_mean.size}."
+            )
+        factor_covariance = _make_psd_symmetric(factor_covariance)
+
+        mapping_value = params.V
+        if mapping_value is None:
+            mapping_value = returns_dict.get("stock_mapping")
+        if mapping_value is None:
+            raise QPCompilationError(
+                "factor_space mode requires a stock_mapping or params.V."
+            )
+        mapping = np.asarray(mapping_value, dtype=float)
+        if (
+            mapping.ndim != 2
+            or mapping.shape[0] == 0
+            or mapping.shape[1] != factor_mean.size
+        ):
+            raise QPCompilationError(
+                "stock_mapping must have shape (n_assets, n_factors); "
+                f"got {mapping.shape} for {factor_mean.size} factors."
+            )
+        if not np.all(np.isfinite(mapping)):
+            raise QPCompilationError("stock_mapping must be finite.")
+
+        stock_covariance = None
+        stock_covariance_value = returns_dict.get(
+            "stock_covariance",
+            returns_dict.get("tracking_covariance"),
+        )
+        if stock_covariance_value is not None:
+            stock_covariance = _as_square_matrix(
+                stock_covariance_value,
+                "stock_covariance",
+            )
+            if stock_covariance.shape != (mapping.shape[0], mapping.shape[0]):
+                raise QPCompilationError(
+                    "stock_covariance must have shape (n_assets, n_assets); "
+                    f"got {stock_covariance.shape} for {mapping.shape[0]} assets."
+                )
+            stock_covariance = _make_psd_symmetric(stock_covariance)
+        return factor_mean, factor_covariance, mapping, stock_covariance
+
+    if "mean" not in returns_dict:
+        raise QPCompilationError("returns_dict must include 'mean' for QP objectives.")
+    if "covariance" not in returns_dict:
+        raise QPCompilationError(
+            "returns_dict must include 'covariance' for QP objectives."
+        )
+    mean = _as_vector(returns_dict["mean"], "mean")
+    covariance = _as_square_matrix(returns_dict["covariance"], "covariance")
+    n_assets = mean.size
+    if covariance.shape != (n_assets, n_assets):
+        raise QPCompilationError(
+            "covariance shape must match mean length; "
+            f"got {covariance.shape} and {n_assets}."
+        )
+    covariance = _make_psd_symmetric(covariance)
+    mapping = _mapping_matrix(params.V, n_assets)
+    return mean, covariance, mapping, covariance
 
 
 def _as_square_matrix(value, name: str) -> np.ndarray:
@@ -500,6 +602,7 @@ def _validate_max_sharpe_excess_feasibility(
     lower_w: np.ndarray,
     upper_w: np.ndarray,
     params: QPParameters,
+    mean_decision: np.ndarray,
 ) -> None:
     """Check that the original portfolio domain admits positive excess return.
 
@@ -549,7 +652,11 @@ def _validate_max_sharpe_excess_feasibility(
         aux_slices.append((pos, neg, benchmark, float(params.benchmark_l1_budget)))
 
     objective = np.zeros(cursor, dtype=float)
-    objective[decision] = -stock_matrix.T @ (mean - risk_free_rate)
+    if params.mapping_mode == "factor_space":
+        stock_sum_row = np.ones(n_assets) @ stock_matrix
+        objective[decision] = -(mean_decision - risk_free_rate * stock_sum_row)
+    else:
+        objective[decision] = -stock_matrix.T @ (mean - risk_free_rate)
     equality_rows: list[np.ndarray] = []
     equality_rhs: list[float] = []
     inequality_rows: list[np.ndarray] = []

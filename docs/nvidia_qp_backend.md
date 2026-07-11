@@ -179,6 +179,30 @@ Validation provenance is recorded in
 
 This validation makes no QP speedup claim.
 
+## Sprint 7 Factor-Space Workflow Status
+
+Sprint 7 adds an explicit `mapping_mode="factor_space"` for true factor-space
+inputs. In this mode, factor mean/covariance define the QP objective directly,
+while `V @ z` defines stock exposure for investment, box, long-short, turnover,
+benchmark l1, factor exposure, and regularization constraints.
+
+For factor-space max-Sharpe, the excess-return row is:
+
+```text
+factor_mean.T @ z_tilde - risk_free_rate * c = 1
+1_N.T @ V @ z_tilde - c = 0
+```
+
+The factor workflow layer supports externally supplied factor returns and `V`,
+as well as deterministic PCA data from public or synthetic return matrices.
+RP-PCA, IPCA, and AP-Trees can use the external adapter path by supplying their
+own factor returns and mapping. Full CRSP/Compustat replication and full
+end-to-end IPCA/AP-Trees replication are not claimed.
+
+Design details are recorded in `docs/factor_space_qp_design.md`.
+
+This validation makes no QP speedup claim.
+
 ## CompiledQP Convention
 
 `CompiledQP` represents:
@@ -248,7 +272,8 @@ This is required so reports and benchmarks cannot accidentally claim GPU results
 - Sprint 2 validation covers long-only minimum variance, mean variance, target return, and l2-squared regularization.
 - Sprint 3 validation covers l1 regularization and l1 plus l2-squared regularization.
 - Individual per-asset turnover limits are not production-ready.
-- End-to-end IPCA/PCA/AP-Trees factor workflows are not production-ready yet.
+- Full end-to-end IPCA/PCA/AP-Trees factor workflows are not production-ready.
+- Full CRSP/Compustat replication is not production-ready.
 - Rolling-window benchmarks are not production-ready yet.
 - Tracking-error hard constraints remain out of the MVP QP backend because they are QCQP/SOCP constraints, not ordinary QP. The MVP supports tracking error as a quadratic objective penalty.
 
@@ -288,6 +313,11 @@ uv run pytest tests/test_qp_turnover_benchmark_mapping.py -q
 uv run pytest tests/test_qp_factor_exposure_constraints.py -q
 uv run pytest tests/test_qp_tracking_error_penalty.py -q
 uv run pytest tests/test_qp_backend_medium_friction_constraints.py -q
+uv run pytest tests/test_qp_factor_space_compiler.py -q
+uv run pytest tests/test_qp_factor_space_max_sharpe.py -q
+uv run pytest tests/test_qp_factor_space_friction_constraints.py -q
+uv run pytest tests/test_qp_pca_factor_workflow.py -q
+uv run pytest tests/test_qp_external_factor_adapter.py -q
 uv run pytest -m "not gpu" -q
 ```
 
@@ -300,6 +330,7 @@ uv sync --extra cuda12 --extra dev
 uv sync --extra cuda13 --extra dev
 
 uv run pytest -m gpu tests/test_qp_cuopt_backend.py tests/test_qp_mean_variance.py tests/test_qp_target_return.py tests/test_qp_l2_regularization.py tests/test_qp_backend_medium.py tests/test_qp_l1_regularization.py tests/test_qp_l1_mapping.py tests/test_qp_l1_l2_regularization.py tests/test_qp_backend_medium_l1.py tests/test_qp_long_short_constraints.py tests/test_qp_long_short_solve.py tests/test_qp_long_short_mapping.py tests/test_qp_backend_medium_long_short.py tests/test_qp_max_sharpe_reparameterization.py tests/test_qp_max_sharpe_constraints.py tests/test_qp_max_sharpe_regularization.py tests/test_qp_max_sharpe_mapping.py tests/test_qp_backend_medium_max_sharpe.py tests/test_qp_turnover_solve.py tests/test_qp_benchmark_solve.py tests/test_qp_turnover_benchmark_mapping.py tests/test_qp_factor_exposure_constraints.py tests/test_qp_tracking_error_penalty.py tests/test_qp_backend_medium_friction_constraints.py -q
+uv run pytest -m gpu tests/test_qp_factor_space_max_sharpe.py tests/test_qp_factor_space_friction_constraints.py tests/test_qp_pca_factor_workflow.py tests/test_qp_external_factor_adapter.py -q
 ```
 
 ## Next Implementation Order

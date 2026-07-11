@@ -42,6 +42,7 @@ class QPParameters(BaseModel):
     factor_exposure_upper: Optional[np.ndarray] = None
 
     V: Optional[np.ndarray] = None
+    mapping_mode: Literal["stock_space", "factor_space"] = "stock_space"
     backend: Literal["cuopt", "osqp"] = "cuopt"
 
     @field_validator("risk_aversion")

@@ -21,6 +21,11 @@ from .base_parameters import BaseParameters
 from .cvar_data import CvarData
 from .cvar_parameters import CvarParameters
 from .mean_variance_parameters import MeanVarianceParameters
+from .qp_factor_workflows import (
+    FactorModelQPData,
+    build_external_factor_qp_data,
+    build_pca_factor_qp_data,
+)
 from .qp_parameters import QPParameters
 from .settings import (
     ApiSettings,
@@ -35,6 +40,9 @@ __all__ = [
     "CvarParameters",
     "MeanVarianceParameters",
     "QPParameters",
+    "FactorModelQPData",
+    "build_external_factor_qp_data",
+    "build_pca_factor_qp_data",
     "ApiSettings",
     "KDESettings",
     "ReturnsComputeSettings",

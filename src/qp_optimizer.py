@@ -105,8 +105,14 @@ class QuadraticPortfolioOptimizer(BaseOptimizer):
         return result_row, portfolio
 
     def _build_result_row(self, solution, stock_weights, factor_weights) -> pd.Series:
-        expected_return = float(self.compiled_qp.mean @ stock_weights)
-        variance = float(stock_weights @ self.compiled_qp.covariance @ stock_weights)
+        if self.compiled_qp.mapping_mode == "factor_space":
+            expected_return = float(self.compiled_qp.mean @ factor_weights)
+            variance = float(
+                factor_weights @ self.compiled_qp.covariance @ factor_weights
+            )
+        else:
+            expected_return = float(self.compiled_qp.mean @ stock_weights)
+            variance = float(stock_weights @ self.compiled_qp.covariance @ stock_weights)
         volatility = float(np.sqrt(max(variance, 0.0)))
         excess_return = expected_return - self.params.risk_free_rate
         sharpe = excess_return / volatility if volatility > 0 else np.nan

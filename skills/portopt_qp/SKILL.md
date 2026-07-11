@@ -179,6 +179,22 @@ uv run pytest -m gpu \
     -q
 ```
 
+Run Sprint 7 factor-space validation:
+
+```bash
+uv run pytest tests/test_qp_factor_space_compiler.py -q
+uv run pytest tests/test_qp_factor_space_max_sharpe.py -q
+uv run pytest tests/test_qp_factor_space_friction_constraints.py -q
+uv run pytest tests/test_qp_pca_factor_workflow.py -q
+uv run pytest tests/test_qp_external_factor_adapter.py -q
+uv run pytest -m gpu \
+    tests/test_qp_factor_space_max_sharpe.py \
+    tests/test_qp_factor_space_friction_constraints.py \
+    tests/test_qp_pca_factor_workflow.py \
+    tests/test_qp_external_factor_adapter.py \
+    -q
+```
+
 ## Workflow
 
 1. Compile portfolio math into `CompiledQP`.
@@ -192,4 +208,5 @@ uv run pytest -m gpu \
 9. For max-Sharpe, use `w_tilde` as the primary variable, add `excess_mu.T @ w_tilde = 1` and `1.T @ w_tilde - c = 0`, require `c > 0`, scale box/long-short constraints by `c`, and recover `w = w_tilde / c`.
 10. For turnover and benchmark l1 exposure, use distinct nonnegative positive/negative auxiliaries and scale their anchor equalities and total budgets by `c` for max-Sharpe.
 11. For linear factor exposure, compile `B.T @ p <= upper` and `-B.T @ p <= -lower`, scaling both rows by `c` for max-Sharpe. Keep tracking error as a quadratic objective penalty; do not model a hard QCQP/SOCP bound as an ordinary QP.
-12. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
+12. Use `mapping_mode="factor_space"` explicitly for factor mean/covariance inputs. In this mode, use `factor_mean.T @ z_tilde - risk_free_rate * c = 1` for max-Sharpe and apply all stock constraints through `V @ z`.
+13. Extract raw `x`, raw status, normalized status, objective value, solve time, max constraint violation, and variable values by name.
