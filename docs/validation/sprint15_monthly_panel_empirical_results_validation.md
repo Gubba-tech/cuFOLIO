@@ -4,7 +4,7 @@
 
 - Branch: `feature/portopt-unified-qp-cuopt`
 - Repository: `Gubba-tech/cuFOLIO`
-- Implementation commit: `TBD before the implementation commit`
+- Implementation commit: `3c66183`
 - Provenance commit: `TBD after the provenance commit`
 - Raw data: external `/lustre/nvwulf/home/weicdeng/PortOpt-IPCA-GPU/data/dfall_for_test.csv`
 - Raw data committed: no
@@ -71,9 +71,9 @@ Each baseline output includes `metrics_table.csv`, `metrics_table.md`,
 plots include cumulative returns, underwater, monthly-return heatmap,
 constraint violation, gross exposure, K sensitivity, and lambda sensitivity.
 
-## CPU Validation Commands
+## CPU Validation
 
-The following commands are required for the implementation commit:
+The following commands passed after the implementation commit:
 
 ```bash
 uv sync --extra dev
@@ -84,6 +84,15 @@ uv run pytest tests/test_qp_monthly_panel_grid.py -q
 uv run pytest -m "not gpu" -q
 uv run ruff check src tests examples scripts benchmarks
 ```
+
+Results:
+
+- `uv sync --extra dev`: passed.
+- `scripts/smoke_qp_env.py`: passed.
+- `compileall`: passed.
+- Sprint 15 focused tests: `2 passed`.
+- Full CPU suite: `237 passed, 2 skipped, 67 deselected`.
+- Ruff: all checks passed.
 
 ## Claims Boundary
 
