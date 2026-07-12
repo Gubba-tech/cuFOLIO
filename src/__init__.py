@@ -28,6 +28,14 @@ from .qp_factor_workflows import (
     build_pca_factor_qp_data,
 )
 from .qp_optimizer import QuadraticPortfolioOptimizer
+from .qp_paper_data import (
+    build_amp_universe,
+    build_managed_portfolios,
+    characteristic_wide,
+    load_clean_table,
+    validate_cleaned_data,
+    write_validation_report,
+)
 from .qp_paper_replay import (
     PaperReplayWindow,
     ReplaySolveResult,
@@ -52,6 +60,12 @@ __all__ = [
     "MeanVarianceParameters",
     "QPParameters",
     "QuadraticPortfolioOptimizer",
+    "load_clean_table",
+    "characteristic_wide",
+    "validate_cleaned_data",
+    "write_validation_report",
+    "build_amp_universe",
+    "build_managed_portfolios",
     "PaperReplayWindow",
     "ReplaySolveResult",
     "load_replay_window",

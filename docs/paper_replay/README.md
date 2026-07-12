@@ -17,6 +17,38 @@ See [`portopt_ipca_audit.md`](portopt_ipca_audit.md). The public
 `Gubba-tech/PortOpt_IPCA` clone contains the QP and factor-estimation source but
 no saved replay matrices or raw data. It is not modified by Sprint 12.
 
+Sprint 13 adds the cleaned-data bridge. Start with
+[`data_availability_checklist.md`](data_availability_checklist.md) and
+[`cleaned_data_schema.md`](cleaned_data_schema.md). If the real inputs are not
+available, see [`data_blockers_for_full_replication.md`](data_blockers_for_full_replication.md).
+
+## Cleaned Data Workflow
+
+```bash
+uv run python scripts/validate_paper_cleaned_data.py \
+  --monthly-returns tests/fixtures/paper_data/monthly_returns.parquet \
+  --characteristics tests/fixtures/paper_data/characteristics_monthly.parquet \
+  --start-date 2004-01-31 --end-date 2005-12-31 \
+  --lookback-months 12 \
+  --report-path artifacts/paper_replay/synthetic_data_validation.md
+uv run python scripts/build_amp_universe.py \
+  --monthly-returns tests/fixtures/paper_data/monthly_returns.parquet \
+  --characteristics tests/fixtures/paper_data/characteristics_monthly.parquet \
+  --output-dir artifacts/paper_replay/synthetic_universe \
+  --start-date 2004-01-31 --end-date 2005-12-31 --lookback-months 12
+uv run python scripts/build_managed_portfolios.py \
+  --monthly-returns tests/fixtures/paper_data/monthly_returns.parquet \
+  --characteristics tests/fixtures/paper_data/characteristics_monthly.parquet \
+  --universe-file artifacts/paper_replay/synthetic_universe/universe_by_date.parquet \
+  --output-dir artifacts/paper_replay/synthetic_managed_portfolios \
+  --lag-months 1 --start-date 2004-01-31 --end-date 2005-12-31
+```
+
+For a real pilot, use `--lookback-months 240`, `--k-values 6`, the documented
+2005 dates, and approved lambda values. The exporter records that PCA `V`
+maps factor weights to managed-portfolio weights; it must not label those as
+individual stock weights.
+
 ## Export Old Inputs
 
 First use dry-run audit mode. It lists Python functions/classes and candidate
@@ -54,6 +86,20 @@ runner solves OSQP first and then cuOpt. A missing cuOpt runtime creates a
 `skipped` row with a reason; it never substitutes OSQP for a requested cuOpt
 solve.
 
+Export PCA replay windows from the managed portfolio table:
+
+```bash
+uv run python scripts/export_pca_replay_windows.py \
+  --managed-portfolio-returns artifacts/paper_replay/synthetic_managed_portfolios/managed_portfolio_returns.parquet \
+  --output-dir artifacts/paper_replay/synthetic_windows_pca \
+  --k-values 3 --start-date 2005-01-31 --end-date 2005-12-31 \
+  --lookback-months 12 --lambda-l1 0.01 --lambda-l2 0.01
+```
+
+Externally supplied IPCA/RP-PCA/AP-Trees outputs can use
+`scripts/export_external_factor_replay_windows.py` with factor returns, a
+mapping matrix, and asset/managed returns.
+
 ## Summarize
 
 ```bash
@@ -81,4 +127,3 @@ matrices and constraints are byte-for-byte aligned.
 - No global QP speedup claim is made.
 - The existing Mean-CVaR LP workflow is untouched.
 - `CompiledQP` remains `0.5*x.T@Q*x + q.T@x`, and cuOpt receives `0.5*Q`.
-

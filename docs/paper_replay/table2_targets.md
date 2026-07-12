@@ -26,3 +26,10 @@ rows or metrics. A replay report must state whether it uses the same universe,
 factor estimator, date alignment, regularization grid, and realized return
 construction before making any comparison.
 
+## Sprint 13 Comparability
+
+No Sprint 13 result is comparable to Table 2 yet. The available run is a
+synthetic managed-portfolio pipeline with a short lookback and a small
+characteristic set. It is useful for testing the data bridge, but it does not
+use the full 20-year window, exact 330 managed portfolios, AMP universe,
+CRSP/Compustat panel, IPCA estimator, or exact paper hyperparameter winners.

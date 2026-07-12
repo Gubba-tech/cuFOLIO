@@ -362,3 +362,40 @@ solver layer; it does not claim full CRSP/Compustat/IPCA/AP-Trees replication.
 If `backend="cuopt"` is requested without a GPU, record a skipped row and do
 not replace it with OSQP. Preserve the `0.5*x.T@Q*x + q.T@x` convention and
 `Q_cuopt = 0.5*Q`; keep Mean-CVaR unchanged.
+
+## Sprint 13 Cleaned-Data Bridge
+
+Run the paper-style data bridge in this order:
+
+```bash
+uv run python scripts/validate_paper_cleaned_data.py \
+    --monthly-returns <monthly_returns.parquet> \
+    --characteristics <characteristics_monthly.parquet> \
+    --report-path artifacts/paper_replay/data_validation_report.md
+uv run python scripts/build_amp_universe.py \
+    --monthly-returns <monthly_returns.parquet> \
+    --characteristics <characteristics_monthly.parquet> \
+    --output-dir artifacts/paper_replay/universe
+uv run python scripts/build_managed_portfolios.py \
+    --monthly-returns <monthly_returns.parquet> \
+    --characteristics <characteristics_monthly.parquet> \
+    --universe-file artifacts/paper_replay/universe/universe_by_date.parquet \
+    --output-dir artifacts/paper_replay/managed_portfolios
+uv run python scripts/export_pca_replay_windows.py \
+    --managed-portfolio-returns artifacts/paper_replay/managed_portfolios/managed_portfolio_returns.parquet \
+    --output-dir artifacts/paper_replay/windows_pca --k-values 6 \
+    --start-date 2005-01-31 --end-date 2005-12-31 \
+    --lookback-months 240
+uv run python scripts/run_paper_replay.py \
+    --input-dir artifacts/paper_replay/windows_pca \
+    --output-dir artifacts/paper_replay/results/pca_k6_2005_pilot \
+    --backend both --models PCA --max-windows 12 --write-summary
+uv run python scripts/summarize_paper_replay.py \
+    --input-dir artifacts/paper_replay/results/pca_k6_2005_pilot --plots
+```
+
+Use the synthetic Parquet fixtures for tests only. Keep real cleaned data,
+factor matrices, old weights, and realized returns under `data/private/` or
+`artifacts/paper_replay/private/`; never commit them. A synthetic or short
+managed-portfolio run is not a full CRSP/Compustat/IPCA/AP-Trees replication
+and cannot establish old-solution parity without matched old outputs.

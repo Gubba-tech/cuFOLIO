@@ -65,3 +65,5 @@ artifacts/benchmarks/*
 # Generated paper replay artifacts may contain proprietary matrices.
 artifacts/paper_replay/*
 !artifacts/paper_replay/README.md
+data/private/*
+artifacts/paper_replay/private/*

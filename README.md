@@ -203,6 +203,12 @@ The Sprint 12 paper-style matrix replay pilot is documented in
 saved QP matrices and optional old weights; it is not a full
 CRSP/Compustat/IPCA/AP-Trees empirical replication.
 
+Sprint 13 adds a cleaned-data bridge for Parquet validation, configurable
+AMP-style universe filtering, managed-portfolio construction, and PCA replay
+window export. Synthetic examples are under
+[`tests/fixtures/paper_data/`](tests/fixtures/paper_data/); real data must stay
+under `data/private/` or `artifacts/paper_replay/private/`.
+
 Advisor-facing Sprint 11 deliverables are collected in the
 [`PortOpt/cuFOLIO QP technical report`](docs/reports/portopt_cufolio_qp_technical_report.md),
 [`five-minute demo script`](docs/reports/advisor_demo_script.md),
