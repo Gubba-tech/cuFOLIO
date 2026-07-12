@@ -5,7 +5,7 @@
 | Item | Value |
 | --- | --- |
 | Branch | `feature/portopt-unified-qp-cuopt` |
-| Implementation commit | To be filled with the Sprint 14 implementation commit |
+| Implementation commit | `13f0de8` (`Add Sprint 14 monthly panel PCA pilot`) |
 | Real-data source | External uploaded monthly panel; not committed |
 | Source data committed | No |
 | JKP touched | No |
