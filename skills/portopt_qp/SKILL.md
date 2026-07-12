@@ -335,3 +335,30 @@ full CRSP/Compustat/IPCA/AP-Trees replication, and do not alter the existing
 Mean-CVaR LP workflow while preparing these deliverables. The final report,
 demo, PR description, checklist, and interpretation note are under
 `docs/reports/`.
+
+## Sprint 12 Paper Replay
+
+Use the replay layer for saved paper-style matrices before attempting any
+factor-estimator reimplementation:
+
+```bash
+uv run python scripts/export_portopt_replay_windows.py \
+    --portopt-root ../PortOpt_IPCA \
+    --output-dir artifacts/paper_replay/windows \
+    --models PCA IPCA --k-values 6 \
+    --start-date 2005-01-31 --end-date 2005-12-31 --dry-run
+uv run python scripts/run_paper_replay.py \
+    --input-dir tests/fixtures/paper_replay \
+    --output-dir artifacts/paper_replay/synthetic_results \
+    --backend osqp --write-summary
+uv run python scripts/summarize_paper_replay.py \
+    --input-dir artifacts/paper_replay/synthetic_results --plots
+```
+
+The replay schema is `docs/paper_replay/replay_artifact_schema.md`. Keep
+proprietary matrices and realized returns under the gitignored
+`artifacts/paper_replay/` directory. Matrix replay validates the compiler and
+solver layer; it does not claim full CRSP/Compustat/IPCA/AP-Trees replication.
+If `backend="cuopt"` is requested without a GPU, record a skipped row and do
+not replace it with OSQP. Preserve the `0.5*x.T@Q*x + q.T@x` convention and
+`Q_cuopt = 0.5*Q`; keep Mean-CVaR unchanged.

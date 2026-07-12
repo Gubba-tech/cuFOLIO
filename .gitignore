@@ -61,3 +61,7 @@ artifacts/benchmarks/*
 !artifacts/benchmarks/sample_summary.md
 !artifacts/benchmarks/reviewed/
 !artifacts/benchmarks/reviewed/**
+
+# Generated paper replay artifacts may contain proprietary matrices.
+artifacts/paper_replay/*
+!artifacts/paper_replay/README.md

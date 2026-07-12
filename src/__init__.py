@@ -28,6 +28,15 @@ from .qp_factor_workflows import (
     build_pca_factor_qp_data,
 )
 from .qp_optimizer import QuadraticPortfolioOptimizer
+from .qp_paper_replay import (
+    PaperReplayWindow,
+    ReplaySolveResult,
+    compute_replay_diagnostics,
+    load_replay_window,
+    run_replay_directory,
+    save_replay_window,
+    solve_replay_window,
+)
 from .qp_parameters import QPParameters
 from .settings import (
     ApiSettings,
@@ -43,6 +52,13 @@ __all__ = [
     "MeanVarianceParameters",
     "QPParameters",
     "QuadraticPortfolioOptimizer",
+    "PaperReplayWindow",
+    "ReplaySolveResult",
+    "load_replay_window",
+    "save_replay_window",
+    "solve_replay_window",
+    "compute_replay_diagnostics",
+    "run_replay_directory",
     "GPUBackendUnavailable",
     "QPCompilationError",
     "QPSolveError",

@@ -198,6 +198,11 @@ Validation commands and the complete example/notebook list are in
 [`docs/portopt_qp_quickstart.md`](docs/portopt_qp_quickstart.md) and
 [`docs/portopt_qp_examples.md`](docs/portopt_qp_examples.md).
 
+The Sprint 12 paper-style matrix replay pilot is documented in
+[`docs/paper_replay/README.md`](docs/paper_replay/README.md). It validates
+saved QP matrices and optional old weights; it is not a full
+CRSP/Compustat/IPCA/AP-Trees empirical replication.
+
 Advisor-facing Sprint 11 deliverables are collected in the
 [`PortOpt/cuFOLIO QP technical report`](docs/reports/portopt_cufolio_qp_technical_report.md),
 [`five-minute demo script`](docs/reports/advisor_demo_script.md),
