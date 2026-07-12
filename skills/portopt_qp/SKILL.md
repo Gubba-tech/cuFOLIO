@@ -264,6 +264,42 @@ The six lightweight notebooks are under `notebooks/portopt_qp/`. They keep
 host. See `docs/portopt_qp_quickstart.md`, `docs/portopt_qp_examples.md`,
 `docs/qp_vs_cvar.md`, and `docs/limitations.md` for the product boundaries.
 
+## Sprint 15 Empirical Monthly-Panel Workflow
+
+Use the external `dfall_for_test.csv` panel only from its approved path; never
+commit the raw file. Sprint 15 runs the 2005-2022 60-month pilot, the
+2020-2022 240-month short-OOS pilot, K=2..6 sensitivity, and the 4x4 lambda
+grid. The grid runner writes per-configuration windows and replay results plus
+`grid_results.csv`, `grid_summary.md`, `heatmap_data.csv`, and matplotlib plots:
+
+```bash
+uv run python scripts/run_monthly_panel_pca_grid.py \
+    --managed-portfolio-returns artifacts/paper_replay/managed_portfolios_monthly_panel/managed_portfolio_returns.parquet \
+    --output-dir artifacts/paper_replay/results/monthly_panel_pca_k_grid_2020_2022_240m \
+    --start-date 2020-01-31 --end-date 2022-12-31 \
+    --lookback-months 240 --k-values 2 3 4 5 6 \
+    --lambda-l1-values 1.7e-4 --lambda-l2-values 1e-3 \
+    --backend osqp --workers 8
+```
+
+Summarize a saved run and generate diagnostics with:
+
+```bash
+uv run python scripts/summarize_monthly_panel_results.py \
+    --input-dir artifacts/paper_replay/results/<run_id> --plots
+```
+
+The 2005 run has 215 realized-return windows because 2022-12 has no next-month
+return; two OSQP windows reported `user_limit`. The 2020 K=6 baseline has
+35/35 optimal OSQP windows. The B40 Slurm cuOpt run has 35/35 optimal windows;
+its metadata must record the Slurm job, node, GPU, CUDA report, cuOpt version,
+and runtime. H200 queue delays do not change the B40 result. The empirical
+report is in `docs/paper_replay/monthly_panel_empirical_results.md`.
+
+These outputs remain empirical uploaded-panel evidence. Do not claim full paper
+replication, IPCA/RP-PCA/AP-Trees replication, old-solution parity, or global
+QP speedup. Keep the Mean-CVaR LP workflow untouched.
+
 Run Sprint 9 benchmark smoke tests:
 
 ```bash

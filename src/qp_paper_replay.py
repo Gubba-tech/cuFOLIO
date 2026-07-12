@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import csv
 import json
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -524,6 +526,30 @@ def _summary_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _solve_replay_path(job: tuple[str, str, bool]) -> dict[str, Any]:
+    """Solve one replay path in a worker process without changing QP semantics."""
+    path_string, requested_backend, compare_old = job
+    path = Path(path_string)
+    window = load_replay_window(path)
+    base = {
+        "window_id": window.window_id,
+        "rebalance_date": window.rebalance_date,
+        "model_name": window.model_name,
+        "objective": window.objective,
+        "mapping_mode": window.mapping_mode,
+        "backend": requested_backend,
+        "source_path": str(path),
+    }
+    try:
+        result = solve_replay_window(window, requested_backend)
+    except GPUBackendUnavailable as exc:
+        return {**base, "status": "skipped", "skip_reason": str(exc)}
+    except Exception as exc:  # preserve one failed window for audit
+        return {**base, "status": "failed", "error": str(exc)}
+    old_solution = window.old_weights if compare_old else None
+    return {**base, **compute_replay_diagnostics(old_solution, result, window)}
+
+
 def _basic_metrics(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for row in rows:
@@ -557,10 +583,13 @@ def run_replay_directory(
     max_windows: int | None = None,
     compare_old: bool = False,
     write_summary: bool = False,
+    workers: int = 1,
 ) -> list[dict[str, Any]]:
     """Replay all NPZ windows and write per-window diagnostics."""
     if backend not in {"osqp", "cuopt", "both"}:
         raise ValueError("backend must be osqp, cuopt, or both.")
+    if workers < 1:
+        raise ValueError("workers must be at least 1.")
     paths = _window_paths(Path(input_dir))
     selected = []
     for path in paths:
@@ -571,28 +600,17 @@ def run_replay_directory(
     if max_windows is not None:
         selected = selected[:max_windows]
     backends = ["osqp", "cuopt"] if backend == "both" else [backend]
-    rows: list[dict[str, Any]] = []
-    for path, window in selected:
-        for requested_backend in backends:
-            base = {
-                "window_id": window.window_id,
-                "rebalance_date": window.rebalance_date,
-                "model_name": window.model_name,
-                "objective": window.objective,
-                "mapping_mode": window.mapping_mode,
-                "backend": requested_backend,
-                "source_path": str(path),
-            }
-            try:
-                result = solve_replay_window(window, requested_backend)
-            except GPUBackendUnavailable as exc:
-                rows.append({**base, "status": "skipped", "skip_reason": str(exc)})
-                continue
-            except Exception as exc:  # preserve one failed window for audit
-                rows.append({**base, "status": "failed", "error": str(exc)})
-                continue
-            old_solution = window.old_weights if compare_old else None
-            rows.append({**base, **compute_replay_diagnostics(old_solution, result, window)})
+    jobs = [
+        (str(path), requested_backend, compare_old)
+        for path, _ in selected
+        for requested_backend in backends
+    ]
+    if workers == 1:
+        rows = [_solve_replay_path(job) for job in jobs]
+    else:
+        context = mp.get_context("spawn")
+        with ProcessPoolExecutor(max_workers=workers, mp_context=context) as executor:
+            rows = list(executor.map(_solve_replay_path, jobs))
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     _write_csv(output / "per_window_results.csv", rows)

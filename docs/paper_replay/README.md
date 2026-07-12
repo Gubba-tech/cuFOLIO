@@ -62,6 +62,33 @@ For a real pilot, use `--lookback-months 240`, `--k-values 6`, the documented
 maps factor weights to managed-portfolio weights; it must not label those as
 individual stock weights.
 
+## Sprint 15 Empirical Results
+
+Sprint 15 runs the external `dfall_for_test.csv` panel through the monthly
+managed-portfolio PCA workflow and records Table-2-style metrics, diagnostics,
+plots, K sensitivity, lambda sensitivity, and a real cuOpt GPU execution. The
+raw panel is not committed. Use the inventory and report for exact artifact
+paths and claims boundaries:
+
+- [`sprint14_artifact_inventory.md`](sprint14_artifact_inventory.md)
+- [`monthly_panel_empirical_results.md`](monthly_panel_empirical_results.md)
+- [`table2_targets.md`](table2_targets.md)
+- [`../validation/sprint15_monthly_panel_empirical_results_validation.md`](../validation/sprint15_monthly_panel_empirical_results_validation.md)
+
+The full 2005-2022 60-month run produces 215 realized-return windows because
+the 2022-12 rebalance has no next-month return. The 2020-2022 240-month K=6
+baseline is 35 windows; both OSQP and the B40 cuOpt job solve all 35. The
+2005 K sensitivity is a controlled 12-window sample, and the lambda grid is a
+controlled 12-window sample per pair. Neither design is a full paper
+replication.
+
+Summarize a saved run with optional matplotlib plots:
+
+```bash
+uv run python scripts/summarize_monthly_panel_results.py \
+  --input-dir artifacts/paper_replay/results/<run_id> --plots
+```
+
 ## Export Old Inputs
 
 First use dry-run audit mode. It lists Python functions/classes and candidate

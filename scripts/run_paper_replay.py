@@ -18,6 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-windows", type=int, default=None)
     parser.add_argument("--compare-old", action="store_true")
     parser.add_argument("--write-summary", action="store_true")
+    parser.add_argument("--workers", type=int, default=1)
     return parser
 
 
@@ -31,10 +32,10 @@ def main() -> None:
         max_windows=args.max_windows,
         compare_old=args.compare_old,
         write_summary=args.write_summary,
+        workers=args.workers,
     )
     print(f"replay_rows={len(rows)} output_dir={args.output_dir}")
 
 
 if __name__ == "__main__":
     main()
-

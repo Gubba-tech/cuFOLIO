@@ -134,6 +134,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--w-max", type=float, default=0.08)
     parser.add_argument("--risk-free-rate", type=float, default=0.0)
     parser.add_argument("--backend", choices=("osqp", "cuopt", "both"), default="osqp")
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--max-windows", type=int)
     parser.add_argument("--allow-short-lookback", action="store_true")
     parser.add_argument("--assume-characteristics-lagged", action="store_true")
@@ -214,6 +215,7 @@ def main() -> None:
         replay_dir,
         backend=args.backend,
         write_summary=True,
+        workers=args.workers,
     )
     metrics = _metrics(rows)
     manifest = {

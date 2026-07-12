@@ -153,6 +153,29 @@ old-solution parity, and global QP speedup are not claimed. See
 [`docs/paper_replay/monthly_panel_pilot.md`](docs/paper_replay/monthly_panel_pilot.md),
 and [`docs/validation/sprint14_monthly_panel_pilot_validation.md`](docs/validation/sprint14_monthly_panel_pilot_validation.md).
 
+### Sprint 15 Empirical Monthly-Panel Results
+
+Sprint 15 extends the uploaded-panel pilot into a full 2005-2022 60-month
+experiment, a 2020-2022 240-month experiment, K=2..6 sensitivity, a 4x4
+lambda sensitivity grid, and a direct cuOpt GPU run. The external
+`dfall_for_test.csv` is not committed. The empirical report, artifact inventory,
+and generated output locations are documented in
+[`docs/paper_replay/monthly_panel_empirical_results.md`](docs/paper_replay/monthly_panel_empirical_results.md)
+and [`docs/paper_replay/sprint14_artifact_inventory.md`](docs/paper_replay/sprint14_artifact_inventory.md).
+
+The 2005 run has 215 realized-return windows because the final 2022-12
+rebalance has no next-month return. The 2020 K=6 baseline has 35/35 optimal
+OSQP windows and the B40 cuOpt run has 35/35 optimal windows. These are
+uploaded-panel empirical results, not full paper replication, old-solution
+parity, or global speedup claims.
+
+For a saved result directory, generate Table-2-style metrics and plots with:
+
+```bash
+uv run python scripts/summarize_monthly_panel_results.py \
+  --input-dir artifacts/paper_replay/results/<run_id> --plots
+```
+
 ## Validation
 
 The CPU validation suite can be run without a GPU:
@@ -177,6 +200,7 @@ Validation and provenance reports:
 
 - [`Sprint 13 real-data bridge validation`](docs/validation/sprint13_real_data_bridge_validation.md)
 - [`Sprint 12 paper replay validation`](docs/validation/sprint12_paper_replay_validation.md)
+- [`Sprint 15 monthly-panel empirical validation`](docs/validation/sprint15_monthly_panel_empirical_results_validation.md)
 - [`QP technical report`](docs/reports/portopt_cufolio_qp_technical_report.md)
 - [`Benchmark interpretation note`](docs/reports/benchmark_interpretation_note.md)
 
