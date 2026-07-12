@@ -22,6 +22,19 @@ Sprint 13 adds the cleaned-data bridge. Start with
 [`cleaned_data_schema.md`](cleaned_data_schema.md). If the real inputs are not
 available, see [`data_blockers_for_full_replication.md`](data_blockers_for_full_replication.md).
 
+Sprint 14 uses the uploaded monthly stock-characteristic panel as the primary
+empirical dataset. JKP is not used in Sprint 14. See
+[`monthly_characteristic_panel_schema.md`](monthly_characteristic_panel_schema.md)
+and [`monthly_panel_pilot.md`](monthly_panel_pilot.md) for the schema,
+conversion, managed-portfolio, PCA, and QP pilot workflow.
+
+The uploaded panel covers 2000 through 2022-12 with approximately 700 stocks
+per month in the intended universe. Since the original paper uses a 20-year
+lookback for a 2005 OOS start, exact 2005-start replication is impossible with
+this date range. A shorter-lookback 2005 run is pilot-only; a 2020-start
+20-year-lookback run has a shorter OOS period. Full IPCA and AP-Trees
+replication, old-solution parity, and global QP speedup are not claimed.
+
 ## Cleaned Data Workflow
 
 ```bash

@@ -219,6 +219,46 @@ extra. An unavailable cuOpt runtime must raise `GPUBackendUnavailable`; it must
 not fall back to OSQP. The examples and notebooks are onboarding artifacts and
 make no QP speedup claim.
 
+## Sprint 14 Monthly Panel Workflow
+
+The uploaded monthly stock-characteristic panel is the primary empirical
+dataset for Sprint 14. JKP is not used, downloaded, parsed, or documented in
+this sprint. Keep the raw panel outside git under `data/private/` or
+`artifacts/paper_replay/private/`.
+
+Use the monthly-panel validator and converter before building managed
+portfolios:
+
+```bash
+uv run python scripts/validate_monthly_characteristic_panel.py \
+    --input data/private/monthly_characteristic_panel.tsv \
+    --output-dir artifacts/paper_replay/monthly_panel_validation \
+    --format tsv --sep auto
+uv run python scripts/convert_monthly_characteristic_panel.py \
+    --input data/private/monthly_characteristic_panel.tsv \
+    --output artifacts/paper_replay/processed/monthly_characteristic_panel.parquet \
+    --format tsv --sep auto --drop-missing-ret
+```
+
+The default timing is sort on characteristics at month `t` and realize
+managed portfolio returns at month `t+1`. The uploaded panel covers 2000 to
+2022-12 with approximately 700 stocks per month in the intended universe. A
+240-month lookback therefore cannot support exact 2005-start replication; a
+shorter-lookback 2005 run is pilot-only, while a 2020 240-month run has a short
+OOS period.
+
+The PCA exporter uses `V` to map factor weights to managed-portfolio weights.
+Do not call recovered weights individual stock weights. With `backend=both`,
+missing cuOpt creates explicit `skipped` rows; it never substitutes OSQP.
+
+Required claims boundary:
+
+- Do not claim full original paper replication.
+- Do not claim full IPCA or AP-Trees replication.
+- Do not claim old-solution parity without old weights/objectives.
+- Do not claim global QP speedup.
+- Keep Mean-CVaR LP functionality untouched.
+
 The six lightweight notebooks are under `notebooks/portopt_qp/`. They keep
 `backend="osqp"` explicit; change it to `"cuopt"` only on a cuOpt-capable GPU
 host. See `docs/portopt_qp_quickstart.md`, `docs/portopt_qp_examples.md`,

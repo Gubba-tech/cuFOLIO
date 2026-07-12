@@ -15,7 +15,7 @@ QP implementation is not a replacement for the existing Mean-CVaR example.
 | --- | --- | --- | --- |
 | cuFOLIO baseline | Scenario-based Mean-CVaR LP | Existing cuFOLIO workflow | Original developer example |
 | PortOpt extension | Convex portfolio QP and homogeneous max-Sharpe QP | OSQP validation, direct cuOpt | Research and backend integration |
-| Paper replay | Cleaned monthly data, managed portfolios, PCA windows | Reproducible scripts | Synthetic bridge available; real-data replay depends on licensed inputs |
+| Paper replay | Cleaned monthly data, managed portfolios, PCA windows | Reproducible scripts | Sprint 14 uploaded-panel pilot; full paper replication is not claimed |
 
 The QP work is intentionally scoped. It does not claim full paper replication,
 hard tracking constraints, per-asset turnover limits, or a global QP speedup.
@@ -126,6 +126,32 @@ the availability checklist in
 [`docs/paper_replay/data_availability_checklist.md`](docs/paper_replay/data_availability_checklist.md),
 and the blocker report in
 [`docs/paper_replay/data_blockers_for_full_replication.md`](docs/paper_replay/data_blockers_for_full_replication.md).
+
+### Sprint 14 Uploaded-Panel Pilot
+
+The uploaded monthly stock-characteristic panel is the primary empirical
+dataset for Sprint 14. JKP is out of scope. The panel covers 2000 through
+2022-12 with approximately 700 stocks per month in the intended universe.
+
+```bash
+uv run python scripts/run_monthly_panel_pca_pilot.py \
+  --monthly-panel data/private/monthly_characteristic_panel.tsv \
+  --output-dir artifacts/paper_replay/results/monthly_panel_pca_k6_2020_20y_lookback \
+  --start-date 2020-01-31 --end-date 2022-12-31 \
+  --lookback-months 240 --k-values 6 --characteristics all \
+  --n-bins 10 --weighting value \
+  --lambda-l1 1.7e-4 --lambda-l2 1e-3 \
+  --short-budget 0.2 --w-min -0.08 --w-max 0.08 \
+  --backend both --assume-characteristics-lagged
+```
+
+Exact 2005-start 20-year-lookback replication is impossible with a panel that
+starts in 2000. A 2005 short-lookback result is pilot-only; a 2020
+20-year-lookback result has a short OOS period. Full IPCA/AP-Trees replication,
+old-solution parity, and global QP speedup are not claimed. See
+[`docs/paper_replay/monthly_characteristic_panel_schema.md`](docs/paper_replay/monthly_characteristic_panel_schema.md),
+[`docs/paper_replay/monthly_panel_pilot.md`](docs/paper_replay/monthly_panel_pilot.md),
+and [`docs/validation/sprint14_monthly_panel_pilot_validation.md`](docs/validation/sprint14_monthly_panel_pilot_validation.md).
 
 ## Validation
 
