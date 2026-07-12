@@ -5,7 +5,8 @@
 - Branch: `feature/portopt-unified-qp-cuopt`
 - Repository: `Gubba-tech/cuFOLIO`
 - Implementation commit: `3c66183`
-- Provenance commit: `TBD after the provenance commit`
+- Provenance commit: `3e436df` (the validation-record commit; this hash field is
+  finalized in the follow-up metadata commit)
 - Raw data: external `/lustre/nvwulf/home/weicdeng/PortOpt-IPCA-GPU/data/dfall_for_test.csv`
 - Raw data committed: no
 - Sprint 14 base tag: `sprint14-green-13f0de8`
