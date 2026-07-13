@@ -205,6 +205,7 @@ def run_design(
     lookback_months: int,
     backend: str,
     workers: int,
+    configs: list[dict[str, object]] | None = None,
 ) -> tuple[str, list[dict[str, object]], list[dict[str, object]]]:
     start = pd.Timestamp(start_date).to_period("M").to_timestamp("M")
     end = pd.Timestamp(end_date).to_period("M").to_timestamp("M")
@@ -224,15 +225,13 @@ def run_design(
         next_returns = next_returns.loc[history.columns]
         if history.empty:
             continue
-        for config in _configs():
+        for config in (configs if configs is not None else _configs()):
             jobs.append((config, str(date.date()), history.to_numpy(float), next_returns.to_numpy(float), backend))
     if backend == "cuopt" and workers > 1:
         raise ValueError("use workers=1 for a single-GPU cuOpt baseline run")
-    if workers > 1 or backend == "cuopt":
+    if workers > 1:
         context = __import__("multiprocessing").get_context("spawn")
         executor_kwargs = {"max_workers": workers, "mp_context": context}
-        if backend == "cuopt":
-            executor_kwargs["max_tasks_per_child"] = 20
         with ProcessPoolExecutor(**executor_kwargs) as executor:
             rows = list(executor.map(_safe_solve_job, jobs))
     else:
@@ -254,18 +253,42 @@ def run_baselines(
     output_dir: str | Path,
     backend: str = "osqp",
     workers: int = 1,
+    config_offset: int = 0,
+    max_configs: int | None = None,
+    resume: bool = False,
 ) -> list[dict[str, object]]:
     returns = _load_returns(Path(managed_portfolio_returns))
-    all_rows: list[dict[str, object]] = []
-    metric_rows: list[dict[str, object]] = []
-    for design_args in (("2020-01-31", "2022-12-31", 240), ("2005-01-31", "2022-12-31", 60)):
-        design, rows, metrics = run_design(returns, *design_args, backend=backend, workers=workers)
-        for row in rows:
-            row["design"] = design
-        all_rows.extend(rows)
-        metric_rows.extend(metrics)
+    configs = _configs()[config_offset:]
+    if max_configs is not None:
+        configs = configs[:max_configs]
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
+    existing_path = output / "baseline_per_window_results.csv"
+    all_rows: list[dict[str, object]] = (
+        pd.read_csv(existing_path).to_dict(orient="records")
+        if resume and existing_path.exists()
+        else []
+    )
+    existing_keys = {(str(row.get("design")), str(row.get("window_id"))) for row in all_rows}
+    for design_args in (("2020-01-31", "2022-12-31", 240), ("2005-01-31", "2022-12-31", 60)):
+        design, rows, _ = run_design(
+            returns,
+            *design_args,
+            backend=backend,
+            workers=workers,
+            configs=configs,
+        )
+        for row in rows:
+            row["design"] = design
+            key = (str(row.get("design")), str(row.get("window_id")))
+            if key not in existing_keys:
+                all_rows.append(row)
+                existing_keys.add(key)
+
+    metric_rows: list[dict[str, object]] = []
+    for design in ("2020-01-31_2022-12-31_240m", "2005-01-31_2022-12-31_60m"):
+        design_rows = [row for row in all_rows if str(row.get("design")) == design]
+        metric_rows.extend(_metric_rows(design_rows, design))
     _write_csv(output / "baseline_per_window_results.csv", all_rows)
     _write_csv(output / "baseline_metrics.csv", metric_rows)
     frame = pd.DataFrame(all_rows)
@@ -297,12 +320,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--backend", choices=("osqp", "cuopt"), default="osqp")
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--config-offset", type=int, default=0)
+    parser.add_argument("--max-configs", type=int)
+    parser.add_argument("--resume", action="store_true")
     return parser
 
 
 def main() -> None:
     args = build_parser().parse_args()
-    rows = run_baselines(args.managed_portfolio_returns, args.output_dir, args.backend, args.workers)
+    rows = run_baselines(
+        args.managed_portfolio_returns,
+        args.output_dir,
+        args.backend,
+        args.workers,
+        config_offset=args.config_offset,
+        max_configs=args.max_configs,
+        resume=args.resume,
+    )
     print(f"baseline_rows={len(rows)} output_dir={args.output_dir}")
 
 

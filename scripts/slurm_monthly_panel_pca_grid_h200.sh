@@ -25,6 +25,7 @@ read -r -a k_values <<< "${K_VALUES:-2 3 4 5 6}"
 chunk_size="${GRID_CHUNK_SIZE:-20}"
 total_combinations=$(( ${#k_values[@]} * 10 * 10 ))
 mkdir -p "$log_dir" "$run_dir"
+log_path="$log_dir/monthly-panel-pca-grid-${gpu_tag}-${SLURM_JOB_ID:-local}.log"
 
 start_epoch="$(date +%s)"
 status=0
@@ -79,11 +80,13 @@ set +e
             --output-dir "$run_dir/summary"
         status=$?
     fi
-} 2>&1 | tee "$log_dir/monthly-panel-pca-grid-${gpu_tag}-${SLURM_JOB_ID:-local}.log"
+} 2>&1 | tee "$log_path"
 pipeline_status=${PIPESTATUS[0]}
 if [[ "$pipeline_status" != "0" ]]; then
     status="$pipeline_status"
 fi
+cuopt_version="$(sed -n 's/^cuopt_version=//p' "$log_path" | head -1)"
+cuopt_version="${cuopt_version:-unknown}"
 set -e
 
 end_epoch="$(date +%s)"

@@ -80,6 +80,9 @@ def run_constraint_sensitivity(
     top_n: int = 3,
     short_budgets: list[float] | None = None,
     bound_pairs: list[tuple[float, float]] | None = None,
+    config_offset: int = 0,
+    max_configs: int | None = None,
+    resume: bool = False,
 ) -> list[dict[str, object]]:
     frame = pd.read_csv(grid_results)
     sharpe_column = "annualized_sharpe" if "annualized_sharpe" in frame else "Sharpe"
@@ -88,49 +91,60 @@ def run_constraint_sensitivity(
     bound_pairs = bound_pairs or [(-0.05, 0.05), (-0.08, 0.08), (-0.10, 0.10), (-0.20, 0.20)]
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    results = []
+    jobs = []
     for _, selected in top.iterrows():
         base = f"k{int(selected['k'])}_l1_{_label(float(selected['lambda_l1']))}_l2_{_label(float(selected['lambda_l2']))}"
         for short_budget in short_budgets:
             for w_min, w_max in bound_pairs:
                 config = f"{base}_sb_{_label(short_budget)}_b_{_label(w_min)}_{_label(w_max)}"
-                window_dir = output / "windows" / config
-                result_dir = output / "runs" / config
-                export_pca_windows(
-                    managed_portfolio_returns,
-                    window_dir,
-                    k_values=[int(selected["k"])],
-                    start_date=start_date,
-                    end_date=end_date,
-                    lookback_months=lookback_months,
-                    lambda_l1=float(selected["lambda_l1"]),
-                    lambda_l2=float(selected["lambda_l2"]),
-                    short_budget=short_budget,
-                    w_min=w_min,
-                    w_max=w_max,
-                    allow_short_lookback=False,
-                    model_name=f"PCA-constraint-sensitivity-{config}",
-                )
-                replay_rows = run_replay_directory(window_dir, result_dir, backend=backend, write_summary=True)
-                metrics = summarize_run(result_dir, plots=False)
-                activity = _activity(window_dir, backend, w_min, w_max, short_budget)
-                for metric in metrics:
-                    results.append(
-                        {
-                            **metric,
-                            **activity,
-                            "config_id": config,
-                            "k": int(selected["k"]),
-                            "lambda_l1": float(selected["lambda_l1"]),
-                            "lambda_l2": float(selected["lambda_l2"]),
-                            "short_budget": short_budget,
-                            "w_min": w_min,
-                            "w_max": w_max,
-                            "replay_rows": len(replay_rows),
-                            "artifact_path": str(result_dir),
-                        }
-                    )
-    _write_csv(output / "constraint_sensitivity.csv", results)
+                jobs.append((selected, config, short_budget, w_min, w_max))
+    jobs = jobs[config_offset:]
+    if max_configs is not None:
+        jobs = jobs[:max_configs]
+
+    results_path = output / "constraint_sensitivity.csv"
+    results = pd.read_csv(results_path).to_dict(orient="records") if resume and results_path.exists() else []
+    existing_configs = {str(row.get("config_id")) for row in results}
+    for selected, config, short_budget, w_min, w_max in jobs:
+        if resume and config in existing_configs:
+            continue
+        window_dir = output / "windows" / config
+        result_dir = output / "runs" / config
+        export_pca_windows(
+            managed_portfolio_returns,
+            window_dir,
+            k_values=[int(selected["k"])],
+            start_date=start_date,
+            end_date=end_date,
+            lookback_months=lookback_months,
+            lambda_l1=float(selected["lambda_l1"]),
+            lambda_l2=float(selected["lambda_l2"]),
+            short_budget=short_budget,
+            w_min=w_min,
+            w_max=w_max,
+            allow_short_lookback=False,
+            model_name=f"PCA-constraint-sensitivity-{config}",
+        )
+        replay_rows = run_replay_directory(window_dir, result_dir, backend=backend, write_summary=True)
+        metrics = summarize_run(result_dir, plots=False)
+        activity = _activity(window_dir, backend, w_min, w_max, short_budget)
+        for metric in metrics:
+            results.append(
+                {
+                    **metric,
+                    **activity,
+                    "config_id": config,
+                    "k": int(selected["k"]),
+                    "lambda_l1": float(selected["lambda_l1"]),
+                    "lambda_l2": float(selected["lambda_l2"]),
+                    "short_budget": short_budget,
+                    "w_min": w_min,
+                    "w_max": w_max,
+                    "replay_rows": len(replay_rows),
+                    "artifact_path": str(result_dir),
+                }
+            )
+    _write_csv(results_path, results)
     _write_csv(output / "bound_activity.csv", results)
     _write_csv(output / "regularization_activity.csv", results)
     return results
@@ -146,6 +160,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lookback-months", type=int, default=240)
     parser.add_argument("--backend", choices=("osqp", "cuopt"), default="osqp")
     parser.add_argument("--top-n", type=int, default=3)
+    parser.add_argument("--config-offset", type=int, default=0)
+    parser.add_argument("--max-configs", type=int)
+    parser.add_argument("--resume", action="store_true")
     return parser
 
 
@@ -160,6 +177,9 @@ def main() -> None:
         args.lookback_months,
         args.backend,
         args.top_n,
+        config_offset=args.config_offset,
+        max_configs=args.max_configs,
+        resume=args.resume,
     )
     print(f"constraint_rows={len(rows)} output_dir={args.output_dir}")
 

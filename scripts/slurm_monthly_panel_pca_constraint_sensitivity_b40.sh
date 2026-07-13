@@ -20,7 +20,10 @@ log_dir="artifacts/paper_replay/gpu_logs"
 grid_dir="${GRID_OUTPUT_DIR:-artifacts/paper_replay/results/monthly_panel_pca_grid_2020_2022_240m_cuopt_b40}"
 output_dir="${CONSTRAINT_OUTPUT_DIR:-artifacts/paper_replay/results/monthly_panel_pca_constraint_sensitivity_cuopt_b40}"
 returns_path="${MANAGED_RETURNS_PATH:-artifacts/paper_replay/managed_portfolios_monthly_panel/managed_portfolio_returns.parquet}"
+chunk_size="${CONSTRAINT_CHUNK_SIZE:-8}"
+total_configs=16
 mkdir -p "$log_dir" "$output_dir"
+log_path="$log_dir/monthly-panel-pca-constraints-b40-${SLURM_JOB_ID:-local}.log"
 start_epoch="$(date +%s)"
 status=0
 cuopt_version="unknown"
@@ -30,25 +33,37 @@ set +e
     echo "slurm_job_id=${SLURM_JOB_ID:-unknown}"
     echo "slurm_node=${SLURMD_NODENAME:-unknown}"
     echo "grid_results=$grid_dir/grid_results.csv"
+    echo "constraint_chunk_size=$chunk_size"
     nvidia-smi
     uv sync --extra cuda13 --extra dev
     cuopt_version="$(uv run python -c 'import cuopt; print(getattr(cuopt, "__version__", "unknown"))')"
     echo "cuopt_version=$cuopt_version"
-    uv run python scripts/run_monthly_panel_pca_constraint_sensitivity.py \
-        --grid-results "$grid_dir/grid_results.csv" \
-        --managed-portfolio-returns "$returns_path" \
-        --output-dir "$output_dir" \
-        --start-date 2020-01-31 \
-        --end-date 2022-12-31 \
-        --lookback-months 240 \
-        --backend cuopt \
-        --top-n 1
-    status=$?
-} 2>&1 | tee "$log_dir/monthly-panel-pca-constraints-b40-${SLURM_JOB_ID:-local}.log"
+    for ((offset = 0; offset < total_configs; offset += chunk_size)); do
+        echo "starting_constraint_offset=$offset"
+        uv run python scripts/run_monthly_panel_pca_constraint_sensitivity.py \
+            --grid-results "$grid_dir/grid_results.csv" \
+            --managed-portfolio-returns "$returns_path" \
+            --output-dir "$output_dir" \
+            --start-date 2020-01-31 \
+            --end-date 2022-12-31 \
+            --lookback-months 240 \
+            --backend cuopt \
+            --top-n 1 \
+            --config-offset "$offset" \
+            --max-configs "$chunk_size" \
+            --resume
+        status=$?
+        if [[ "$status" != "0" ]]; then
+            break
+        fi
+    done
+} 2>&1 | tee "$log_path"
 pipeline_status=${PIPESTATUS[0]}
 if [[ "$pipeline_status" != "0" ]]; then
     status="$pipeline_status"
 fi
+cuopt_version="$(sed -n 's/^cuopt_version=//p' "$log_path" | head -1)"
+cuopt_version="${cuopt_version:-unknown}"
 set -e
 
 end_epoch="$(date +%s)"

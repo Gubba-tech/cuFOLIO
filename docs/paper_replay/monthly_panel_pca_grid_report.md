@@ -104,12 +104,60 @@ comparison:
 - H200 cuOpt grid: `artifacts/paper_replay/results/monthly_panel_pca_grid_2020_2022_240m_cuopt_h200/`
 - CPU smoke grid: `artifacts/paper_replay/results/monthly_panel_pca_grid_cpu_smoke/`
 
+The H200 job 46311 is submitted but remains pending on Slurm priority; no H200
+rows are included in the completed B40 conclusions above.
+
 Each completed grid directory contains `grid_results.csv`,
 `grid_summary.md`, `last_completed.json`, per-configuration replay artifacts,
 and (after post-processing) a `summary/` directory with ranked results,
 heatmap data, and Matplotlib plots. The report intentionally does not copy
 values from a partial checkpoint; use `grid_summary.md` after the Slurm job
 metadata reports `run_status=0` and the row count is 500.
+
+### Completed B40 Grid
+
+The B40 cuOpt run is complete and is the current full-grid result:
+
+| Item | Result |
+| --- | ---: |
+| Slurm job | 46312 on `b40x4-03` |
+| Configurations | 500 / 500 |
+| Windows per configuration | 35 / 35 optimal for every row |
+| Failed or skipped windows | 0 |
+| Maximum constraint violation | `2.1e-8` |
+| Runtime | 5,941 seconds |
+| cuOpt / CUDA extra | 26.04.000 / `cuda13` |
+
+The best B40 row by annualized Sharpe is `K=2`, `lambda_l1=5.0`,
+`lambda_l2=1e-6`: annualized Sharpe `0.558993`, CAGR `0.105144`, maximum
+drawdown `-0.192737`, and Calmar `0.545531`. The best row for each K is:
+
+| K | lambda_l1 | lambda_l2 | Annualized Sharpe | CAGR | Max drawdown |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 2 | 5.0 | 1e-6 | 0.558993 | 0.105144 | -0.192737 |
+| 3 | 1e-6 | 5.0 | 0.555446 | 0.103736 | -0.197230 |
+| 4 | 1e-6 | 5.0 | 0.557195 | 0.103827 | -0.196394 |
+| 5 | 1e-6 | 5.0 | 0.556391 | 0.103562 | -0.196554 |
+| 6 | 1e-6 | 5.0 | 0.556067 | 0.103442 | -0.196664 |
+
+This is a descriptive result for the uploaded 35-window panel, not a paper
+hyperparameter selection claim. The exact Sprint 15 pair
+`lambda_l1=1.7e-4`, `lambda_l2=1e-3` is not in the current logarithmic grid;
+the closest tested L2 value is `9.5e-4`. For K=6, that closest row has
+annualized Sharpe `0.425782`, CAGR `0.070347`, and maximum drawdown
+`-0.215637`.
+
+### Constraint Sensitivity
+
+Job 46325 tested the top B40 grid row over four short budgets
+(`0.0, 0.1, 0.2, 0.5`) and four symmetric box bounds
+(`+/-0.05, +/-0.08, +/-0.10, +/-0.20`). All 16 configurations completed
+35/35 optimal windows. The box bounds were not active in any configuration.
+The `short_budget=0` rows were effectively long-only and produced annualized
+Sharpe `0.560529`; all positive short-budget rows produced `0.558993` with
+average gross short exposure about `0.000240`. Thus the tested box bounds do
+not explain the weak result, while allowing a small amount of short exposure
+changes this selected row only marginally.
 
 ## Baseline Comparisons
 
@@ -118,6 +166,28 @@ variance, mean-variance risk-aversion, unregularized PCA, L1-only, L2-only,
 combined L1/L2, long-only, and long-short comparisons for both the 2020/240m
 and 2005/60m designs. Its GPU wrapper is
 `scripts/slurm_monthly_panel_pca_baselines_b40.sh`.
+
+The B40 baseline job 46327 completed in resumable two-configuration chunks in
+643 seconds. It wrote 22 design/config metric rows and 2,750 window rows with
+cuOpt 26.04.000 and `run_status=0`. The 2020/240m design completed 35/35
+windows for every configuration. The 2005/60m design recorded one failed
+window for most PCA variants and three for the long-only variant; each failure
+was the explicit `max_sharpe requires a feasible portfolio with strictly
+positive excess return` compilation guard in the 2009 crisis window, and the
+rows remain in the output.
+
+Selected annualized Sharpe results are:
+
+| Design | Equal weight | Min variance | MV RA=0.1 | PCA K6 L1+L2 | PCA K6 long-only |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2020/240m | 0.5691 | 0.7297 | 0.5779 | 0.4258 | 0.5677 |
+| 2005/60m | 0.6622 | 0.8031 | 0.8436 | 0.7207 | 0.6769 |
+
+The 2020/240m baseline confirms that the weak result is specific to the
+regularized factor-space PCA configuration in this uploaded-panel setup; the
+managed-portfolio min-variance and mean-variance controls perform differently
+under the same rolling dates and explicit constraints. This is a diagnostic
+comparison, not evidence that one alternative is the paper's estimator.
 
 Infeasible or backend-failed windows are recorded as `status=failed` so that a
 baseline comparison does not stop at the first problematic rolling window.

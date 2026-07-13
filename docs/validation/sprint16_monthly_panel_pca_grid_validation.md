@@ -46,15 +46,25 @@ uv run pytest -m gpu tests/test_qp_cuopt_backend.py -q
 
 | Job | Intended result | Status |
 | --- | --- | --- |
-| 46312 | Full K=2..6, 10x10 cuOpt grid on B40 | resumable Slurm run, chunk-isolated |
-| 46311 | Full K=2..6, 10x10 cuOpt grid on H200 | queued/running Slurm run |
-| 46313 | GPU baseline comparison after B40 grid | dependent Slurm run |
-| 46314 | Top-ranked B40 constraint sensitivity | dependent Slurm run |
+| 46312 | Full K=2..6, 10x10 cuOpt grid on B40 | completed: 500 rows, 35/35 optimal per row |
+| 46311 | Full K=2..6, 10x10 cuOpt grid on H200 | queued by Slurm priority |
+| 46327 | GPU baseline comparison after B40 grid | completed: 22 metric rows, 2,750 windows |
+| 46325 | Top-ranked B40 constraint sensitivity | completed: 16 configurations, 35/35 optimal |
 
 The job wrappers record node, GPU name, driver/CUDA report, cuOpt version,
 partition, runtime, output directory, and exit status in
 `artifacts/paper_replay/gpu_logs/*.metadata`. A grid is accepted only when its
 metadata reports `run_status=0` and `grid_results.csv` contains 500 data rows.
+
+The completed B40 grid metadata records cuOpt 26.04.000, CUDA extra `cuda13`,
+and maximum observed constraint violation below `2.1e-8`. The completed
+constraint sensitivity metadata records cuOpt 26.04.000 and maximum observed
+constraint violation below `5.6e-8`.
+
+The completed baseline metadata records cuOpt 26.04.000, `run_status=0`, and
+643 seconds. Baseline failures are preserved as rows; the 2005/60m PCA
+failures occur when the max-Sharpe compiler correctly finds no feasible
+portfolio with strictly positive excess return in the 2009 crisis window.
 
 ## Claims Boundary
 
