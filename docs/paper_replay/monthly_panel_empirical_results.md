@@ -32,7 +32,7 @@ portfolio weights; it does not recover individual stock weights.
 - Short budget: 0.2.
 - Explicit variable bounds: `[-0.08, 0.08]`.
 - CPU backend: OSQP.
-- GPU backend: direct cuOpt on the B40 node; no CPU fallback.
+- GPU backend: direct cuOpt on B40 and H200 nodes; no CPU fallback.
 
 ## Experiments
 
@@ -41,6 +41,7 @@ portfolio weights; it does not recover individual stock weights.
 | 2005-2022 K=6 baseline | 60 months | 215 | OSQP | 213 optimal, 2 `user_limit`; long pilot-only extension |
 | 2020-2022 K=6 baseline | 240 months | 35 | OSQP | 35 optimal; short OOS |
 | 2020-2022 K=6 baseline | 240 months | 35 | cuOpt/B40 | 35 optimal; GPU node execution |
+| 2020-2022 K=6 baseline | 240 months | 35 | cuOpt/H200 | 35 optimal; GPU node execution |
 | 2005 K sensitivity | 60 months | 12 per K | OSQP | K=2..6, all configurations 12/12 optimal |
 | 2020 K sensitivity | 240 months | 35 per K | OSQP | K=2..6, all configurations 35/35 optimal |
 | 2020 lambda sensitivity | 240 months | 12 per lambda pair | OSQP | 4 x 4 grid, all configurations 12/12 optimal; controlled window sample |
@@ -61,6 +62,7 @@ returns. All values below are from the saved artifact tables.
 | 2005-2022, 60m, K=6 | OSQP | 0.104721 | 0.152717 | 0.731418 | -0.460989 | 0.227166 | 213/215 | 2 `user_limit` | 2.61e-6 |
 | 2020-2022, 240m, K=6 | OSQP | 0.084365 | 0.213060 | 0.485968 | -0.216178 | 0.390255 | 35/35 | 0 | 1.18e-6 |
 | 2020-2022, 240m, K=6 | cuOpt/B40 | 0.084365 | 0.213061 | 0.485969 | -0.216178 | 0.390256 | 35/35 | 0 | 1.95e-10 |
+| 2020-2022, 240m, K=6 | cuOpt/H200 | 0.084365 | 0.213061 | 0.485969 | -0.216178 | 0.390256 | 35/35 | 0 | 1.95e-10 |
 
 The baseline exposure diagnostics were approximately gross long 1.2 and gross
 short 0.2. Box violations were zero in the summarized successful windows.
@@ -119,17 +121,26 @@ corresponding gitignored artifact directory:
 
 The B40 cuOpt run was Slurm job `46129` on `b40x4-02`, using an NVIDIA RTX PRO
 6000 Blackwell Server Edition, CUDA report 13.2, `cuopt-cu13==26.4.0`, and 162
-seconds of runtime. Its output is under
-`artifacts/paper_replay/results/monthly_panel_pca_k6_2020_2022_240m_cuopt_b40/`.
-H200 job `46128` remained pending due to queue priority and was not used for
-the result.
+seconds of runtime. The H200 cuOpt run was Slurm job `46128` on `h200x8-04`,
+using an NVIDIA H200 NVL, CUDA report 13.2, `cuopt-cu13==26.4.0`, and 160
+seconds of runtime. Their outputs are under:
+
+`artifacts/paper_replay/results/monthly_panel_pca_k6_2020_2022_240m_cuopt_b40/`
+
+and
+
+`artifacts/paper_replay/results/monthly_panel_pca_k6_2020_2022_240m_cuopt_h200/`.
+
+Both jobs produced 35/35 optimal windows. Their per-window realized returns
+differed by at most `9.7e-10`, so the hardware results agree to numerical
+precision.
 
 ## Interpretation
 
 The workflow successfully produces empirical managed-portfolio QP results on
-the uploaded panel. The 2020 OSQP and B40 cuOpt baselines agree closely in
-returns and constraints, while the cuOpt run reaches all 35 windows directly
-on the GPU node. The K sensitivity is sample-dependent, and the controlled
+the uploaded panel. The 2020 OSQP, B40 cuOpt, and H200 cuOpt baselines agree
+closely in returns and constraints, while the GPU runs reach all 35 windows
+directly on their GPU nodes. The K sensitivity is sample-dependent, and the controlled
 lambda grid shows only small changes near the baseline pair except at the
 largest L2 value.
 

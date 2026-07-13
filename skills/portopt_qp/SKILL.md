@@ -291,10 +291,11 @@ uv run python scripts/summarize_monthly_panel_results.py \
 
 The 2005 run has 215 realized-return windows because 2022-12 has no next-month
 return; two OSQP windows reported `user_limit`. The 2020 K=6 baseline has
-35/35 optimal OSQP windows. The B40 Slurm cuOpt run has 35/35 optimal windows;
-its metadata must record the Slurm job, node, GPU, CUDA report, cuOpt version,
-and runtime. H200 queue delays do not change the B40 result. The empirical
-report is in `docs/paper_replay/monthly_panel_empirical_results.md`.
+35/35 optimal OSQP windows. The B40 and H200 Slurm cuOpt runs each have 35/35
+optimal windows; their metadata must record the Slurm job, node, GPU, CUDA
+report, cuOpt version, and runtime. The two GPU results agree to numerical
+precision. The empirical report is in
+`docs/paper_replay/monthly_panel_empirical_results.md`.
 
 These outputs remain empirical uploaded-panel evidence. Do not claim full paper
 replication, IPCA/RP-PCA/AP-Trees replication, old-solution parity, or global

@@ -53,8 +53,20 @@ The B40 job was submitted as Slurm job `46129` and completed successfully:
 - Status: 35 optimal, 0 failed, 0 skipped
 - Maximum constraint violation: `1.945e-10`
 
-The H200 job `46128` remained pending for priority and was not used. No OSQP
-rerun was used as a fallback for the B40 cuOpt request.
+No OSQP rerun was used as a fallback for either GPU cuOpt request.
+
+The H200 job also completed successfully:
+
+- Node: `h200x8-04`
+- GPU: NVIDIA H200 NVL
+- CUDA report: 13.2
+- cuOpt: `cuopt-cu13==26.4.0`
+- Runtime: 160 seconds
+- Output: `artifacts/paper_replay/results/monthly_panel_pca_k6_2020_2022_240m_cuopt_h200/`
+- Status: 35 optimal, 0 failed, 0 skipped
+- Maximum constraint violation: `1.947e-10`
+
+The B40 and H200 per-window realized returns differ by at most `9.7e-10`.
 
 ## Metrics And Plots
 
@@ -65,6 +77,7 @@ The baseline metrics are:
 | 2005 60m OSQP | 0.104721 | 0.152717 | 0.731418 | -0.460989 | 213/215 |
 | 2020 240m OSQP | 0.084365 | 0.213060 | 0.485968 | -0.216178 | 35/35 |
 | 2020 240m cuOpt/B40 | 0.084365 | 0.213061 | 0.485969 | -0.216178 | 35/35 |
+| 2020 240m cuOpt/H200 | 0.084365 | 0.213061 | 0.485969 | -0.216178 | 35/35 |
 
 Each baseline output includes `metrics_table.csv`, `metrics_table.md`,
 `cumulative_returns.csv`, `monthly_returns.csv`,

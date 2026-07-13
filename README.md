@@ -165,7 +165,8 @@ and [`docs/paper_replay/sprint14_artifact_inventory.md`](docs/paper_replay/sprin
 
 The 2005 run has 215 realized-return windows because the final 2022-12
 rebalance has no next-month return. The 2020 K=6 baseline has 35/35 optimal
-OSQP windows and the B40 cuOpt run has 35/35 optimal windows. These are
+OSQP windows and both the B40 and H200 cuOpt runs have 35/35 optimal windows.
+These are
 uploaded-panel empirical results, not full paper replication, old-solution
 parity, or global speedup claims.
 

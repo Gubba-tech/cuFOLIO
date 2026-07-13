@@ -77,7 +77,7 @@ paths and claims boundaries:
 
 The full 2005-2022 60-month run produces 215 realized-return windows because
 the 2022-12 rebalance has no next-month return. The 2020-2022 240-month K=6
-baseline is 35 windows; both OSQP and the B40 cuOpt job solve all 35. The
+baseline is 35 windows; OSQP and both B40 and H200 cuOpt jobs solve all 35. The
 2005 K sensitivity is a controlled 12-window sample, and the lambda grid is a
 controlled 12-window sample per pair. Neither design is a full paper
 replication.

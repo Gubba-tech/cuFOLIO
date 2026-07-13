@@ -48,8 +48,8 @@ universe construction, factor estimator, or full OOS alignment.
 | Monthly panel K=6 pilot, 2005 short lookback | 60 months | 12 Sprint 14 windows | 0.1645 | 1.5665 | -0.0458 | 0.1008 | Not comparable; pilot-only |
 | Monthly panel K=6 pilot, 2020 lookback | 240 months | 35 Sprint 14 windows | 0.0844 | 0.4860 | -0.2162 | 0.2131 | Not comparable; short OOS |
 
-Sprint 15 adds the completed runs below. The B40 row is a direct cuOpt result;
-the OSQP row is the CPU validation for the same 2020 design.
+Sprint 15 adds the completed runs below. The B40 and H200 rows are direct cuOpt
+results; the OSQP row is the CPU validation for the same 2020 design.
 
 | Design | Backend | Lookback | Windows | CAGR | Sharpe | Max drawdown | Volatility | Comparability |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -57,6 +57,7 @@ the OSQP row is the CPU validation for the same 2020 design.
 | Monthly panel K=6 | OSQP | 60 months, 2005-2022 | 215 | 0.1047 | 0.7314 | -0.4610 | 0.1527 | Not comparable; shorter lookback, 2 `user_limit` windows |
 | Monthly panel K=6 | OSQP | 240 months, 2020-2022 | 35 | 0.0844 | 0.4860 | -0.2162 | 0.2131 | Not comparable; short OOS |
 | Monthly panel K=6 | cuOpt/B40 | 240 months, 2020-2022 | 35 | 0.0844 | 0.4860 | -0.2162 | 0.2131 | Not comparable; short OOS and different data pipeline |
+| Monthly panel K=6 | cuOpt/H200 | 240 months, 2020-2022 | 35 | 0.0844 | 0.4860 | -0.2162 | 0.2131 | Not comparable; short OOS and different data pipeline |
 
 The Sprint 15 K and lambda sensitivity artifacts are under
 `artifacts/paper_replay/results/monthly_panel_pca_k_grid_*` and
