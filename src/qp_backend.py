@@ -15,6 +15,19 @@ from .exceptions import GPUBackendUnavailable
 from .qp_formulations import CompiledQP
 
 
+def _is_cuda_unavailable_error(exc: RuntimeError) -> bool:
+    message = str(exc).lower()
+    return any(
+        marker in message
+        for marker in (
+            "cudaerrorinsufficientdriver",
+            "no cuda-capable device",
+            "no devices were found",
+            "driver version is insufficient",
+        )
+    )
+
+
 @dataclass
 class QPSolution:
     """Raw solution returned by a QP backend."""
@@ -177,7 +190,15 @@ class CuOptQPBackend:
                     settings.set_parameter(param, value)
 
         total_start = time.time()
-        problem.solve(settings)
+        try:
+            problem.solve(settings)
+        except RuntimeError as exc:
+            if _is_cuda_unavailable_error(exc):
+                raise GPUBackendUnavailable(
+                    "cuOpt GPU runtime unavailable; CUDA driver/device is not "
+                    "usable on this machine. Do not substitute a CPU solver."
+                ) from exc
+            raise
         total_time = time.time() - total_start
 
         raw_status = getattr(problem.Status, "name", str(problem.Status))

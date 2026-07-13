@@ -82,6 +82,14 @@ baseline is 35 windows; OSQP and both B40 and H200 cuOpt jobs solve all 35. The
 controlled 12-window sample per pair. Neither design is a full paper
 replication.
 
+## Sprint 16 PCA Audit And Grid
+
+Sprint 16 corrects the PCA direction/mean separation, adds managed-portfolio
+and per-window diagnostics, and runs a resumable K=2..6, 10x10 L1/L2 grid with
+explicit variable bounds. See
+[`monthly_panel_pca_grid_report.md`](monthly_panel_pca_grid_report.md) and
+[`../validation/sprint16_monthly_panel_pca_grid_validation.md`](../validation/sprint16_monthly_panel_pca_grid_validation.md).
+
 Summarize a saved run with optional matplotlib plots:
 
 ```bash

@@ -316,7 +316,11 @@ def summarize_run(input_dir: str | Path, plots: bool = False) -> list[dict[str, 
     grouped: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
     for row in rows:
         grouped[(row.get("backend", ""), row.get("model_name", ""))].append(row)
-    metrics = [metrics_for_rows(group) for _, group in sorted(grouped.items())]
+    def group_sort_key(key: tuple[str, str]) -> tuple[int, str, str]:
+        backend_rank = {"osqp": 0, "cuopt": 1}.get(key[0], 2)
+        return backend_rank, key[0], key[1]
+
+    metrics = [metrics_for_rows(grouped[key]) for key in sorted(grouped, key=group_sort_key)]
     _write_csv(output_dir / "metrics_table.csv", metrics)
     _write_markdown(output_dir / "metrics_table.md", metrics)
     returns = _returns_frame(rows)

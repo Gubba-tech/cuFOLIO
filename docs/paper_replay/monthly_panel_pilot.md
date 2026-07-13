@@ -113,6 +113,13 @@ with realized returns may end one month before the raw panel's final date.
 the cuOpt rows are `skipped`; OSQP is never substituted for a requested cuOpt
 solve.
 
+## Sprint 16 Audit And Grid
+
+For the corrected PCA mean/covariance convention, managed-portfolio diagnostics,
+K/lambda grid, baseline comparisons, and GPU provenance, see
+[`monthly_panel_pca_grid_report.md`](monthly_panel_pca_grid_report.md) and
+[`../validation/sprint16_monthly_panel_pca_grid_validation.md`](../validation/sprint16_monthly_panel_pca_grid_validation.md).
+
 ## Claims Boundary
 
 - Full original paper replication is not claimed.

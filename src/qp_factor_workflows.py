@@ -139,7 +139,12 @@ def build_pca_factor_qp_data(
     center: bool = True,
     tickers: list[str] | None = None,
 ) -> FactorModelQPData:
-    """Build deterministic PCA factors from a public or synthetic return matrix."""
+    """Build PCA factors while preserving the raw-return factor mean.
+
+    When ``center`` is true, centering is used only to estimate the PCA
+    eigenvectors. The factor returns supplied to the optimizer remain
+    ``original @ V`` so their mean is not silently forced to zero.
+    """
     original = _as_2d(stock_returns, "stock_returns")
     n_observations, n_assets = original.shape
     if not isinstance(n_components, int) or not 1 <= n_components <= min(
@@ -156,7 +161,7 @@ def build_pca_factor_qp_data(
         pivot = int(np.argmax(np.abs(mapping[:, factor_idx])))
         if mapping[pivot, factor_idx] < 0:
             mapping[:, factor_idx] *= -1.0
-    factor_returns = centered @ mapping
+    factor_returns = original @ mapping
     return FactorModelQPData(
         factor_mean=factor_returns.mean(axis=0),
         factor_covariance=_sample_covariance(factor_returns, "factor_returns"),

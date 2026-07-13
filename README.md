@@ -170,6 +170,17 @@ These are
 uploaded-panel empirical results, not full paper replication, old-solution
 parity, or global speedup claims.
 
+### Sprint 16 PCA Math Audit And Paper-Style Grid
+
+Sprint 16 separates demeaned-return PCA direction estimation from raw-return
+factor scoring, so factor means remain available to the max-Sharpe objective.
+It adds managed-portfolio and per-window diagnostics, a resumable K=2..6 and
+10x10 L1/L2 grid, baseline comparisons, constraint-activity analysis, and
+GPU Slurm wrappers. See
+[`docs/paper_replay/monthly_panel_pca_grid_report.md`](docs/paper_replay/monthly_panel_pca_grid_report.md)
+and
+[`docs/validation/sprint16_monthly_panel_pca_grid_validation.md`](docs/validation/sprint16_monthly_panel_pca_grid_validation.md).
+
 For a saved result directory, generate Table-2-style metrics and plots with:
 
 ```bash
@@ -202,6 +213,7 @@ Validation and provenance reports:
 - [`Sprint 13 real-data bridge validation`](docs/validation/sprint13_real_data_bridge_validation.md)
 - [`Sprint 12 paper replay validation`](docs/validation/sprint12_paper_replay_validation.md)
 - [`Sprint 15 monthly-panel empirical validation`](docs/validation/sprint15_monthly_panel_empirical_results_validation.md)
+- [`Sprint 16 monthly-panel PCA grid validation`](docs/validation/sprint16_monthly_panel_pca_grid_validation.md)
 - [`QP technical report`](docs/reports/portopt_cufolio_qp_technical_report.md)
 - [`Benchmark interpretation note`](docs/reports/benchmark_interpretation_note.md)
 

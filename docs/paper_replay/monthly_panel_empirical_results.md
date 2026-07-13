@@ -158,3 +158,14 @@ paper's estimator or about general QP performance.
 - The data start in 2000, so exact 2005-start 20-year lookback is impossible.
 - No global QP speedup is claimed.
 - The existing Mean-CVaR LP workflow was not changed.
+
+## Sprint 16 PCA Audit Note
+
+The Sprint 15 saved H200/B40 K=6 artifacts above were produced before the
+Sprint 16 PCA audit and used the pre-audit exporter convention for PCA
+directions. Sprint 16 estimates `V` from demeaned managed returns and computes
+factor scores from raw managed returns, preserving factor means for the
+max-Sharpe objective. The corrected grid, diagnostic, and baseline artifacts
+are documented in
+[`monthly_panel_pca_grid_report.md`](monthly_panel_pca_grid_report.md); the
+Sprint 15 numbers should remain labeled as pre-audit pilot results.

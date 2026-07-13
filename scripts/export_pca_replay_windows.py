@@ -82,7 +82,9 @@ def export_pca_windows(
             factor_data = build_pca_factor_qp_data(
                 history.to_numpy(dtype=float),
                 n_components=k,
-                center=False,
+                # Estimate PCA directions from demeaned returns, then project
+                # raw returns so the optimizer receives a non-zero factor mean.
+                center=True,
                 tickers=[str(column) for column in history.columns],
             )
             note = (
