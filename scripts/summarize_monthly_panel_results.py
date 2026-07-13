@@ -80,6 +80,12 @@ def metrics_for_rows(rows: list[dict[str, str]]) -> dict[str, object]:
     )
     cagr = _annualized_return(returns)
     max_drawdown = float(np.min(drawdown)) if drawdown.size else None
+    monthly_sharpe = (
+        float(np.mean(returns) / np.std(returns, ddof=1))
+        if returns.size > 1 and np.std(returns, ddof=1) > 0
+        else None
+    )
+    annualized_sharpe = monthly_sharpe * math.sqrt(12.0) if monthly_sharpe is not None else None
     return {
         "backend": rows[0].get("backend", "") if rows else "",
         "model_name": rows[0].get("model_name", "") if rows else "",
@@ -97,11 +103,10 @@ def metrics_for_rows(rows: list[dict[str, str]]) -> dict[str, object]:
         "annualized_volatility": (
             float(np.std(returns, ddof=1) * math.sqrt(12.0)) if returns.size > 1 else None
         ),
-        "Sharpe": (
-            float(np.mean(returns) / np.std(returns, ddof=1) * math.sqrt(12.0))
-            if returns.size > 1 and np.std(returns, ddof=1) > 0
-            else None
-        ),
+        "monthly_sharpe": monthly_sharpe,
+        "annualized_sharpe": annualized_sharpe,
+        # Keep the historical field used by grid artifacts and downstream code.
+        "Sharpe": annualized_sharpe,
         "max_drawdown": max_drawdown,
         "Calmar": cagr / abs(max_drawdown) if cagr is not None and max_drawdown not in (None, 0) else None,
         "best_month": float(np.max(returns)) if returns.size else None,
@@ -204,6 +209,8 @@ def _write_markdown(path: Path, metrics: list[dict[str, object]]) -> None:
         "time_in_market",
         "cagr",
         "annualized_volatility",
+        "monthly_sharpe",
+        "annualized_sharpe",
         "Sharpe",
         "max_drawdown",
         "Calmar",

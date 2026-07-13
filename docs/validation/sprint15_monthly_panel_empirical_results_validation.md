@@ -72,6 +72,10 @@ The B40 and H200 per-window realized returns differ by at most `9.7e-10`.
 
 The baseline metrics are:
 
+`metrics_table.csv` now reports both `monthly_sharpe` and
+`annualized_sharpe = monthly_sharpe * sqrt(12)`. The legacy `Sharpe` column is
+the annualized value.
+
 | Design/backend | CAGR | Annual vol. | Sharpe | Max drawdown | Optimal |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 2005 60m OSQP | 0.104721 | 0.152717 | 0.731418 | -0.460989 | 213/215 |

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import sys
 from pathlib import Path
 
@@ -68,6 +69,8 @@ def test_empirical_summarizer_writes_table2_outputs_and_plots(tmp_path):
         "time_in_market",
         "cagr",
         "annualized_volatility",
+        "monthly_sharpe",
+        "annualized_sharpe",
         "Sharpe",
         "max_drawdown",
         "Calmar",
@@ -83,6 +86,10 @@ def test_empirical_summarizer_writes_table2_outputs_and_plots(tmp_path):
         "failed_count",
     }
     assert required.issubset(metrics[0])
+    assert math.isclose(
+        metrics[0]["annualized_sharpe"],
+        metrics[0]["monthly_sharpe"] * math.sqrt(12.0),
+    )
     for filename in (
         "metrics_table.csv",
         "metrics_table.md",
