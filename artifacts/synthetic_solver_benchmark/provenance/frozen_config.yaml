@@ -1,0 +1,92 @@
+schema_version: 1
+status: frozen
+name: synthetic_osqp_vs_direct_cuopt_v1
+
+canonical_problem:
+  objective_convention: "0.5 * x.T @ P @ x + q.T @ x"
+  variable_lower_bound: -1.0
+  variable_upper_bound: 1.0
+  row_nonzeros: 8
+  sizes: [100, 300, 1000, 3000, 10000]
+  seeds: [11, 29, 47]
+  registered_repetitions: 3
+  warmup_repetitions: 1
+  timeout_seconds: 180.0
+  families:
+    LP-RANGED:
+      kind: lp
+      constraint_ratio: 0.5
+      constraint_mode: ranged
+      description: >-
+        Sparse LP with finite two-sided ranged rows and a known feasible box
+        optimum used as the deterministic generation anchor.
+    LP-MIXED:
+      kind: lp
+      constraint_ratio: 1.0
+      constraint_mode: mixed
+      description: >-
+        Sparse LP with equality, upper-only, and lower-only rows; the linear
+        objective lies in the equality-row space, giving a known optimum.
+    QP-DIAGONAL:
+      kind: qp_diagonal
+      constraint_ratio: 0.5
+      constraint_mode: ranged
+      description: Strictly convex QP with a positive diagonal Hessian.
+    QP-SPARSE-COUPLED:
+      kind: qp_sparse_coupled
+      constraint_ratio: 1.0
+      constraint_mode: mixed
+      description: Strictly convex QP with a sparse coupled Hessian.
+
+solver_contract:
+  osqp:
+    interface: native_python
+    eps_abs: 1.0e-7
+    eps_rel: 1.0e-7
+    max_iter: 1000000
+    polishing: true
+    adaptive_rho: true
+  cuopt:
+    interface: direct_python
+    method: 3
+    log_to_console: false
+    absolute_primal_tolerance: 1.0e-7
+    relative_primal_tolerance: 1.0e-7
+    absolute_dual_tolerance: 1.0e-7
+    relative_dual_tolerance: 1.0e-7
+    absolute_gap_tolerance: 1.0e-7
+    relative_gap_tolerance: 1.0e-7
+    cudss_deterministic: true
+    family_overrides:
+      QP-DIAGONAL:
+        augmented: 1
+
+correctness:
+  strict_osqp_raw_status: solved
+  strict_cuopt_raw_status: Optimal
+  maximum_original_primal_violation: 1.0e-6
+  maximum_objective_reconstruction_error: 1.0e-7
+  maximum_cross_solver_objective_gap_absolute: 1.0e-5
+  maximum_cross_solver_objective_gap_relative: 1.0e-6
+
+repeated_update:
+  family: QP-DIAGONAL
+  n_variables: 3000
+  seeds: [11, 29, 47]
+  updates_per_seed: 20
+  perturbation_scale: 0.01
+
+execution:
+  partition: b40x4
+  gpus_per_job: 1
+  cpus_per_task: 32
+  memory: 128G
+  time_limit: "08:00:00"
+  no_solver_fallback: true
+  max_cuopt_measurements_per_process: 24
+  speedup_definition: OSQP time / cuOpt time
+  timing_definition: >-
+    End-to-end timing starts with canonical arrays resident in host memory and
+    includes backend conversion, model setup, transfer where applicable,
+    numerical solve, result extraction, and canonical correctness
+    reconstruction.

@@ -1,0 +1,5 @@
+problem_family,kind,constraint_mode,constraint_ratio,row_nonzeros,variable_lower,variable_upper,sizes,seeds,description
+LP-RANGED,lp,ranged,0.5,8,-1.0,1.0,"100, 300, 1000, 3000, 10000","11, 29, 47",Sparse LP with finite two-sided ranged rows and a known feasible box optimum used as the deterministic generation anchor.
+LP-MIXED,lp,mixed,1.0,8,-1.0,1.0,"100, 300, 1000, 3000, 10000","11, 29, 47","Sparse LP with equality, upper-only, and lower-only rows; the linear objective lies in the equality-row space, giving a known optimum."
+QP-DIAGONAL,qp_diagonal,ranged,0.5,8,-1.0,1.0,"100, 300, 1000, 3000, 10000","11, 29, 47",Strictly convex QP with a positive diagonal Hessian.
+QP-SPARSE-COUPLED,qp_sparse_coupled,mixed,1.0,8,-1.0,1.0,"100, 300, 1000, 3000, 10000","11, 29, 47",Strictly convex QP with a sparse coupled Hessian.

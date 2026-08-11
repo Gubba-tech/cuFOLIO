@@ -1,0 +1,3 @@
+backend,family,n_variables,seeds,registered_updates,correct_updates,median_setup_seconds,median_update_seconds,median_solve_seconds,median_amortized_end_to_end_seconds
+OSQP,QP-DIAGONAL,3000,3,60,60,0.1788130460772663,7.611000910401344e-06,0.0215479938779026,0.021637017605826203
+cuOpt,QP-DIAGONAL,3000,3,60,60,0.0717814320232719,0.00161132693756365,1.546352814999409,1.5494932909496129

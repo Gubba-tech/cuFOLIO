@@ -1,0 +1,49 @@
+\begin{table}
+\label{tab:memory-usage}
+\begin{tabular}{lrlllll}
+\toprule
+problem\_family & n\_variables & backend & median\_peak\_host\_memory\_bytes & maximum\_peak\_host\_memory\_bytes & median\_peak\_gpu\_memory\_bytes & maximum\_peak\_gpu\_memory\_bytes \\
+\midrule
+LP-MIXED & 100 & OSQP & 1.52826e+08 & 1.52826e+08 &  &  \\
+LP-MIXED & 100 & cuOpt & 1.15254e+09 & 1.15254e+09 & 6.44022e+08 & 6.44022e+08 \\
+LP-MIXED & 300 & OSQP & 1.52826e+08 & 1.52826e+08 &  &  \\
+LP-MIXED & 300 & cuOpt & 8.58272e+08 & 8.58796e+08 & 6.41925e+08 & 6.41925e+08 \\
+LP-MIXED & 1000 & OSQP & 1.52826e+08 & 1.52826e+08 &  &  \\
+LP-MIXED & 1000 & cuOpt & 8.72153e+08 & 8.72677e+08 & 8.13892e+08 & 8.47446e+08 \\
+LP-MIXED & 3000 & OSQP & 1.56959e+08 & 1.57483e+08 &  &  \\
+LP-MIXED & 3000 & cuOpt & 9.47261e+08 & 9.59148e+08 & 2.63422e+09 & 2.63632e+09 \\
+LP-MIXED & 10000 & OSQP & 6.42916e+08 & 6.43965e+08 &  &  \\
+LP-MIXED & 10000 & cuOpt & 1.25662e+09 & 1.27134e+09 & 9.85052e+09 & 9.88407e+09 \\
+LP-RANGED & 100 & OSQP & 1.08208e+08 & 1.08208e+08 &  &  \\
+LP-RANGED & 100 & cuOpt & 8.6299e+08 & 8.63515e+08 & 6.41925e+08 & 6.41925e+08 \\
+LP-RANGED & 300 & OSQP & 1.08208e+08 & 1.08208e+08 &  &  \\
+LP-RANGED & 300 & cuOpt & 8.67262e+08 & 8.67394e+08 & 6.41925e+08 & 6.41925e+08 \\
+LP-RANGED & 1000 & OSQP & 1.09257e+08 & 1.09257e+08 &  &  \\
+LP-RANGED & 1000 & cuOpt & 8.5873e+08 & 8.59255e+08 & 6.44022e+08 & 6.44022e+08 \\
+LP-RANGED & 3000 & OSQP & 1.19362e+08 & 1.19362e+08 &  &  \\
+LP-RANGED & 3000 & cuOpt & 9.33372e+08 & 9.48437e+08 & 1.04877e+09 & 1.04877e+09 \\
+LP-RANGED & 10000 & OSQP & 2.16842e+08 & 2.16924e+08 &  &  \\
+LP-RANGED & 10000 & cuOpt & 1.13959e+09 & 1.15464e+09 & 5.08998e+09 & 5.12354e+09 \\
+QP-DIAGONAL & 100 & OSQP & 1.57692e+08 & 1.57692e+08 &  &  \\
+QP-DIAGONAL & 100 & cuOpt & 8.14797e+08 & 8.26733e+08 & 6.41925e+08 & 6.41925e+08 \\
+QP-DIAGONAL & 300 & OSQP & 1.57692e+08 & 1.57692e+08 &  &  \\
+QP-DIAGONAL & 300 & cuOpt & 8.47229e+08 & 8.59374e+08 & 6.7548e+08 & 6.7548e+08 \\
+QP-DIAGONAL & 1000 & OSQP & 1.57692e+08 & 1.57692e+08 &  &  \\
+QP-DIAGONAL & 1000 & cuOpt & 8.51313e+08 & 8.63248e+08 & 7.7824e+08 & 7.7824e+08 \\
+QP-DIAGONAL & 3000 & OSQP & 1.57692e+08 & 1.57692e+08 &  &  \\
+QP-DIAGONAL & 3000 & cuOpt & 9.36821e+08 & 9.52381e+08 & 2.35949e+09 & 2.39305e+09 \\
+QP-DIAGONAL & 10000 & OSQP & 2.22183e+08 & 2.22581e+08 &  &  \\
+QP-DIAGONAL & 10000 & cuOpt & 1.15523e+09 & 1.16712e+09 & 9.62612e+09 & 9.65968e+09 \\
+QP-SPARSE-COUPLED & 100 & OSQP & 1.57712e+08 & 1.57712e+08 &  &  \\
+QP-SPARSE-COUPLED & 100 & cuOpt & 1.18115e+09 & 1.19286e+09 & 6.44022e+08 & 6.44022e+08 \\
+QP-SPARSE-COUPLED & 300 & OSQP & 1.57712e+08 & 1.57712e+08 &  &  \\
+QP-SPARSE-COUPLED & 300 & cuOpt & 8.20027e+08 & 8.33606e+08 & 6.7548e+08 & 6.7548e+08 \\
+QP-SPARSE-COUPLED & 1000 & OSQP & 1.57712e+08 & 1.57712e+08 &  &  \\
+QP-SPARSE-COUPLED & 1000 & cuOpt & 8.83765e+08 & 8.96631e+08 & 8.45349e+08 & 8.45349e+08 \\
+QP-SPARSE-COUPLED & 3000 & OSQP & 1.58761e+08 & 1.59285e+08 &  &  \\
+QP-SPARSE-COUPLED & 3000 & cuOpt & 9.04188e+08 & 9.15677e+08 & 2.52936e+09 & 2.56292e+09 \\
+QP-SPARSE-COUPLED & 10000 & OSQP & 6.30231e+08 & 6.3155e+08 &  &  \\
+QP-SPARSE-COUPLED & 10000 & cuOpt & 1.19012e+09 & 1.20566e+09 & 9.89666e+09 & 9.93231e+09 \\
+\bottomrule
+\end{tabular}
+\end{table}

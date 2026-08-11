@@ -1,0 +1,10 @@
+| problem_family | backend | registered_rows | strict_optimal | canonical_correctness_pass | accepted_rows | maximum_objective_reconstruction_error | maximum_original_primal_violation |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LP-MIXED | OSQP | 45 | 45 | 45 | 45 | 2.08167e-16 | 1.66533e-16 |
+| LP-MIXED | cuOpt | 45 | 45 | 45 | 45 | 3.88578e-16 | 2.98748e-10 |
+| LP-RANGED | OSQP | 45 | 45 | 45 | 45 | 2.27374e-13 | 1.74157e-07 |
+| LP-RANGED | cuOpt | 45 | 45 | 45 | 45 | 6.25278e-13 | 0 |
+| QP-DIAGONAL | OSQP | 45 | 45 | 45 | 45 | 1.29896e-14 | 1.11022e-16 |
+| QP-DIAGONAL | cuOpt | 45 | 45 | 45 | 45 | 1.55431e-14 | 3.88578e-16 |
+| QP-SPARSE-COUPLED | OSQP | 45 | 45 | 45 | 45 | 2.22045e-14 | 1.66533e-16 |
+| QP-SPARSE-COUPLED | cuOpt | 45 | 45 | 45 | 45 | 2.25375e-14 | 1.82588e-11 |

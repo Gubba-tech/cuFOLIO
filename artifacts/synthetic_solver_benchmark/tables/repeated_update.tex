@@ -1,0 +1,11 @@
+\begin{table}
+\label{tab:repeated-update}
+\begin{tabular}{llrrrrllll}
+\toprule
+backend & family & n\_variables & seeds & registered\_updates & correct\_updates & median\_setup\_seconds & median\_update\_seconds & median\_solve\_seconds & median\_amortized\_end\_to\_end\_seconds \\
+\midrule
+OSQP & QP-DIAGONAL & 3000 & 3 & 60 & 60 & 0.178813 & 7.611e-06 & 0.021548 & 0.021637 \\
+cuOpt & QP-DIAGONAL & 3000 & 3 & 60 & 60 & 0.0717814 & 0.00161133 & 1.54635 & 1.54949 \\
+\bottomrule
+\end{tabular}
+\end{table}

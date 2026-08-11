@@ -1,0 +1,22 @@
+Field,Value
+config_sha256,2dafd2e15a912aa664f857b5452627222eb4592aa42093a226869664e67bbc1a
+cpu_count,64
+cpu_model,Intel(R) Xeon(R) 6530P
+cuda_version,13.2
+cuda_visible_devices,0
+cuopt_version,26.4.0
+git_sha,f00c45ae3d571a1eabe9e66d6034b90683f83626
+gpu_query,"NVIDIA RTX PRO 6000 Blackwell Server Edition, 595.71.05, 97887 MiB"
+host,b40x4-02
+numpy_version,2.2.6
+osqp_algebra,builtin
+osqp_linear_system_backend,QDLDL (OSQP builtin algebra)
+osqp_version,1.0.5
+pandas_version,2.3.2
+platform,Linux-5.14.0-570.58.1.el9_6.x86_64-x86_64-with-glibc2.34
+python_version,3.13.2
+scipy_version,1.16.3
+slurm_array_job_id,
+slurm_cpus_per_task,32
+slurm_job_id,63094
+slurm_partition,b40x4

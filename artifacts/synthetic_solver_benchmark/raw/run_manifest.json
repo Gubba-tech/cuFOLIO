@@ -1,0 +1,24 @@
+{
+  "actual_cold_rows": 480,
+  "backends": [
+    "OSQP",
+    "cuOpt"
+  ],
+  "canonical_instance_count": 60,
+  "cold_results_sha256": "b6aec54b4a90798497c1fd840113a45ca6c2ca1ababec610f16123f8813ff078",
+  "config_sha256": "2dafd2e15a912aa664f857b5452627222eb4592aa42093a226869664e67bbc1a",
+  "environment_sha256": "ac5b7f60cac4f51313a743cc41cd06c0a80287daab9c6b7c5420e43e60e3f15c",
+  "execution": {
+    "host": "b40x4-02",
+    "output_root": "/lustre/nvwulf/scratch/weicdeng/cuFOLIO_synthetic_benchmark_results_v3_30d_20260810/artifacts/synthetic_solver_benchmark",
+    "partition": "b40x4",
+    "slurm_job_id": "63094"
+  },
+  "expected_cold_rows": 480,
+  "git_sha": "f00c45ae3d571a1eabe9e66d6034b90683f83626",
+  "repeated_update_results_sha256": "2aacc410707c0a93c6aff777d96defdf52a938f3cbb85c29b64d639e54616846",
+  "repeated_update_rows": 120,
+  "run_kind": "synthetic_osqp_direct_cuopt_raw_benchmark",
+  "schema_version": 1,
+  "status": "pass"
+}

@@ -1,0 +1,34 @@
+{
+  "checks": {
+    "all_included_pairs_have_strict_optimal_status": true,
+    "all_included_pairs_pass_canonical_correctness": true,
+    "all_included_pairs_use_same_canonical_instance": true,
+    "all_registered_rows_use_one_execution_sha": true,
+    "crossover_annotations_use_measured_sizes_only": true,
+    "every_plotted_point_exists_in_by_size_table": true,
+    "faster_solver_labels_match_speedup": true,
+    "figure_and_table_input_hashes_recorded": true,
+    "figure_and_table_share_end_to_end_timing_definition": true,
+    "headline_speedups_reconcile_to_raw_results": true,
+    "largest_common_size_computed_independently_by_family": true,
+    "no_failed_timed_out_or_censored_row_enters_speedup": true,
+    "raw_row_count_including_warmups_matches_contract": true,
+    "registered_row_count_matches_contract": true,
+    "repeat_analysis_produces_identical_table_values": true,
+    "speedup_definition_is_osqp_divided_by_cuopt": true
+  },
+  "schema_version": 1,
+  "sha256": {
+    "by_size_table_csv": "969fdedf9cb8b78050660ae577ae6637e88c7490a5be9b09eee8ede6502cfeb2",
+    "caption_file": "f9134bfd514b4f66ac326cec8659b37dd7c4846cc91aeaef13c0954f78167707",
+    "flagship_pdf": "377f25daf83902dc4e09a7c39fe3bafd80419630a07751f73306a82ccf5f6f50",
+    "flagship_plot_points": "9046243d9dfb617dcddce4aff2d77877f5c3c58a90bb1afdc400b050578c7e8f",
+    "flagship_png": "e53149a863db6eb809283c45c17820d0aa40687a75f4c18368df76ce7898534f",
+    "headline_table_csv": "4c97154d0decddfc53a2adc50783a069ccbfbf14479e9799fa802b68de9c1c94",
+    "raw_merged_result_file": "b6aec54b4a90798497c1fd840113a45ca6c2ca1ababec610f16123f8813ff078",
+    "summary_input_file": "5336ece566d5b68984d2238d51e062a8a0837c70374cb2c128123dc6bca190a0"
+  },
+  "speedup_definition": "OSQP time / cuOpt time",
+  "status": "pass",
+  "timing_definition": "End-to-end from canonical host arrays through backend conversion/model setup, transfer where applicable, solve, extraction, and canonical correctness reconstruction."
+}

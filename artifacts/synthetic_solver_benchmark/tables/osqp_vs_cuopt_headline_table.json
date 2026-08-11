@@ -1,0 +1,70 @@
+{
+  "records": [
+    {
+      "End-to-end speedup (OSQP/cuOpt)": 2.753287150700186,
+      "Faster solver at n=100": "OSQP",
+      "Faster solver at the largest common solved size": "cuOpt",
+      "First measured crossover size": 3000,
+      "Largest common solved size": 3000,
+      "Maximum canonical objective gap": 3.2576046955057336e-05,
+      "Maximum original primal violation": 1.7415664732567393e-07,
+      "OSQP median end-to-end time at that size": 1.0627388251014054,
+      "OSQP strict-optimal count": 45,
+      "Problem family": "LP-RANGED",
+      "Solve-only speedup (OSQP/cuOpt)": 2.788201813492443,
+      "Timeout/failure count": 0,
+      "cuOpt median end-to-end time at that size": 0.3859890984604135,
+      "cuOpt strict-optimal count": 45
+    },
+    {
+      "End-to-end speedup (OSQP/cuOpt)": 29.486483861054868,
+      "Faster solver at n=100": "OSQP",
+      "Faster solver at the largest common solved size": "cuOpt",
+      "First measured crossover size": 3000,
+      "Largest common solved size": 10000,
+      "Maximum canonical objective gap": 1.5036191736150784e-10,
+      "Maximum original primal violation": 2.9874800029638937e-10,
+      "OSQP median end-to-end time at that size": 123.40295971184968,
+      "OSQP strict-optimal count": 45,
+      "Problem family": "LP-MIXED",
+      "Solve-only speedup (OSQP/cuOpt)": 0.8864903509492945,
+      "Timeout/failure count": 0,
+      "cuOpt median end-to-end time at that size": 4.185068667167798,
+      "cuOpt strict-optimal count": 45
+    },
+    {
+      "End-to-end speedup (OSQP/cuOpt)": 0.8088414525016463,
+      "Faster solver at n=100": "OSQP",
+      "Faster solver at the largest common solved size": "OSQP",
+      "First measured crossover size": "No measured crossover",
+      "Largest common solved size": 10000,
+      "Maximum canonical objective gap": 6.047384815133228e-13,
+      "Maximum original primal violation": 3.8857805861880484e-16,
+      "OSQP median end-to-end time at that size": 5.786389112006873,
+      "OSQP strict-optimal count": 45,
+      "Problem family": "QP-DIAGONAL",
+      "Solve-only speedup (OSQP/cuOpt)": 0.03587713836613541,
+      "Timeout/failure count": 0,
+      "cuOpt median end-to-end time at that size": 7.153922556899488,
+      "cuOpt strict-optimal count": 45
+    },
+    {
+      "End-to-end speedup (OSQP/cuOpt)": 14.995515167376668,
+      "Faster solver at n=100": "OSQP",
+      "Faster solver at the largest common solved size": "cuOpt",
+      "First measured crossover size": 3000,
+      "Largest common solved size": 10000,
+      "Maximum canonical objective gap": 1.842755215086811e-08,
+      "Maximum original primal violation": 1.8258797251924364e-11,
+      "OSQP median end-to-end time at that size": 101.69932971987872,
+      "OSQP strict-optimal count": 45,
+      "Problem family": "QP-SPARSE-COUPLED",
+      "Solve-only speedup (OSQP/cuOpt)": 0.9500617293150763,
+      "Timeout/failure count": 0,
+      "cuOpt median end-to-end time at that size": 6.781983051914722,
+      "cuOpt strict-optimal count": 45
+    }
+  ],
+  "speedup_definition": "OSQP time / cuOpt time",
+  "timing_definition": "End-to-end from canonical host arrays through backend conversion/model setup, transfer where applicable, solve, extraction, and canonical correctness reconstruction."
+}

@@ -1,0 +1,17 @@
+\begin{table}
+\label{tab:correctness-summary}
+\begin{tabular}{llrrrrll}
+\toprule
+problem\_family & backend & registered\_rows & strict\_optimal & canonical\_correctness\_pass & accepted\_rows & maximum\_objective\_reconstruction\_error & maximum\_original\_primal\_violation \\
+\midrule
+LP-MIXED & OSQP & 45 & 45 & 45 & 45 & 2.08167e-16 & 1.66533e-16 \\
+LP-MIXED & cuOpt & 45 & 45 & 45 & 45 & 3.88578e-16 & 2.98748e-10 \\
+LP-RANGED & OSQP & 45 & 45 & 45 & 45 & 2.27374e-13 & 1.74157e-07 \\
+LP-RANGED & cuOpt & 45 & 45 & 45 & 45 & 6.25278e-13 & 0 \\
+QP-DIAGONAL & OSQP & 45 & 45 & 45 & 45 & 1.29896e-14 & 1.11022e-16 \\
+QP-DIAGONAL & cuOpt & 45 & 45 & 45 & 45 & 1.55431e-14 & 3.88578e-16 \\
+QP-SPARSE-COUPLED & OSQP & 45 & 45 & 45 & 45 & 2.22045e-14 & 1.66533e-16 \\
+QP-SPARSE-COUPLED & cuOpt & 45 & 45 & 45 & 45 & 2.25375e-14 & 1.82588e-11 \\
+\bottomrule
+\end{tabular}
+\end{table}

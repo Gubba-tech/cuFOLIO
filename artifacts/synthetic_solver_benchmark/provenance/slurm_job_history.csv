@@ -1,0 +1,14 @@
+job_id|job_name|state|elapsed|exit_code|node_list
+63015|synthetic-cuopt-canary|FAILED|00:00:02|1:0|b40x4-02
+63016|synthetic-cuopt-canary|COMPLETED|00:00:47|0:0|b40x4-02
+63018|synthetic-osqp-cuopt|FAILED|00:53:03|6:0|b40x4-02
+63025|synthetic-barrier-canary|COMPLETED|00:00:10|0:0|b40x4-02
+63026|synthetic-osqp-cuopt|COMPLETED|00:59:23|0:0|b40x4-02
+63077|qpdiag-mixed-canary|FAILED|00:00:04|1:0|b40x4-02
+63079|qpdiag-auto-canary|FAILED|00:00:04|1:0|b40x4-02
+63080|qpdiag-log-canary|COMPLETED|00:00:04|0:0|b40x4-02
+63081|qpdiag-aug-canary|FAILED|00:00:04|1:0|b40x4-02
+63082|qpdiag-aug-error|COMPLETED|00:00:04|0:0|b40x4-02
+63083|qpdiag-aug1-canary|COMPLETED|00:00:05|0:0|b40x4-02
+63084|augmented-scale-canary|FAILED|00:20:24|1:0|b40x4-02
+63094|synthetic-osqp-cuopt|COMPLETED|01:01:23|0:0|b40x4-02
