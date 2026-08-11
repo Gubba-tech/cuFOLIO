@@ -57,6 +57,9 @@ solver_contract:
     absolute_gap_tolerance: 1.0e-7
     relative_gap_tolerance: 1.0e-7
     cudss_deterministic: true
+    family_overrides:
+      QP-DIAGONAL:
+        augmented: 1
 
 correctness:
   strict_osqp_raw_status: solved

@@ -633,9 +633,14 @@ def _build_cuopt_model(problem: CanonicalProblem, config: dict[str, Any]):
     else:
         model.setObjective(linear, sense=MINIMIZE)
     settings = SolverSettings()
-    for parameter, value in config["solver_contract"]["cuopt"].items():
-        if parameter != "interface":
+    cuopt_config = config["solver_contract"]["cuopt"]
+    for parameter, value in cuopt_config.items():
+        if parameter not in {"interface", "family_overrides"}:
             settings.set_parameter(parameter, value)
+    for parameter, value in cuopt_config.get("family_overrides", {}).get(
+        problem.family, {}
+    ).items():
+        settings.set_parameter(parameter, value)
     return model, variables, quadratic, settings, LinearExpression, MINIMIZE
 
 

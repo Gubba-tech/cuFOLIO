@@ -175,6 +175,10 @@ def test_resume_boolean_string_false_is_not_registered(
 def test_analysis_generates_and_reconciles_required_deliverables(
     benchmark_config: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    benchmark_config["canonical_problem"]["sizes"] = [100, 300]
+    benchmark_config["canonical_problem"]["seeds"] = [11, 29]
+    benchmark_config["canonical_problem"]["registered_repetitions"] = 2
+    benchmark_config["canonical_problem"]["warmup_repetitions"] = 0
     output_root = tmp_path / "artifacts"
     (output_root / "raw").mkdir(parents=True)
     (output_root / "provenance").mkdir(parents=True)

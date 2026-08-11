@@ -388,7 +388,11 @@ def build_headline(registered: pd.DataFrame, pairs: pd.DataFrame, by_size: pd.Da
         for backend in SOLVERS:
             backend_rows = raw_family.loc[raw_family["backend"] == backend]
             strict_counts[backend] = int(bool_series(backend_rows["strict_optimal"]).sum())
-        status = raw_family["status"].astype(str).str.lower()
+        accepted = (
+            bool_series(raw_family["strict_optimal"])
+            & bool_series(raw_family["correctness_pass"])
+            & ~bool_series(raw_family["censored"])
+        )
         rows.append(
             {
                 "Problem family": family,
@@ -404,7 +408,7 @@ def build_headline(registered: pd.DataFrame, pairs: pd.DataFrame, by_size: pd.Da
                 ),
                 "OSQP strict-optimal count": strict_counts["OSQP"],
                 "cuOpt strict-optimal count": strict_counts["cuOpt"],
-                "Timeout/failure count": int(status.isin({"timeout", "failed"}).sum()),
+                "Timeout/failure count": int((~accepted).sum()),
                 "Maximum canonical objective gap": finite_max(
                     pair_family.loc[
                         pair_family["common_correct"], "canonical_objective_gap"
@@ -1168,6 +1172,22 @@ def reconciliation_audit(
             registered["execution_sha"].notna().all()
             and registered["execution_sha"].nunique() == 1
         ),
+        "registered_row_count_matches_contract": len(registered)
+        == len(config["canonical_problem"]["families"])
+        * len(config["canonical_problem"]["sizes"])
+        * len(config["canonical_problem"]["seeds"])
+        * int(config["canonical_problem"]["registered_repetitions"])
+        * len(SOLVERS),
+        "raw_row_count_including_warmups_matches_contract": len(registered)
+        + int((~bool_series(pd.read_csv(raw_path)["registered_repetition"])).sum())
+        == len(config["canonical_problem"]["families"])
+        * len(config["canonical_problem"]["sizes"])
+        * len(config["canonical_problem"]["seeds"])
+        * (
+            int(config["canonical_problem"]["registered_repetitions"])
+            + int(config["canonical_problem"]["warmup_repetitions"])
+        )
+        * len(SOLVERS),
     }
     return {
         "schema_version": 1,
@@ -1208,7 +1228,11 @@ def build_report(
         .all()
         .sum()
     )
-    status = registered["status"].astype(str).str.lower()
+    accepted = (
+        bool_series(registered["strict_optimal"])
+        & bool_series(registered["correctness_pass"])
+        & ~bool_series(registered["censored"])
+    )
     max_gap = finite_max(pairs.loc[pairs["common_correct"], "canonical_objective_gap"])
     max_violation = finite_max(
         pairs.loc[pairs["common_correct"], "maximum_pair_primal_violation"]
@@ -1221,7 +1245,7 @@ def build_report(
         f"- Canonical instances: {canonical_count}",
         f"- Instances passing every paired registered repetition: {passing_instances}",
         f"- Registered timing rows: {len(registered)}",
-        f"- Explicit failed/timeout rows: {int(status.isin({'failed', 'timeout'}).sum())}",
+        f"- Excluded non-optimal/failed/timeout rows: {int((~accepted).sum())}",
         f"- Maximum common canonical objective gap: {max_gap}",
         f"- Maximum common original primal violation: {max_violation}",
         f"- CPU: {environment.get('cpu_model')}",
