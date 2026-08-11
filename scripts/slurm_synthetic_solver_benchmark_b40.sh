@@ -35,10 +35,10 @@ echo "python=${PYTHON_BIN}"
 scontrol show job "${SLURM_JOB_ID}"
 nvidia-smi
 
-"${PYTHON_BIN}" benchmarks/synthetic_solver_benchmark.py \
+"${PYTHON_BIN}" -m benchmarks.synthetic_solver_benchmark \
   --config configs/synthetic_solver_benchmark.yaml \
   --output-root "${BENCHMARK_OUTPUT_ROOT}"
 
-"${PYTHON_BIN}" benchmarks/analyze_synthetic_solver_benchmark.py \
+"${PYTHON_BIN}" -m benchmarks.analyze_synthetic_solver_benchmark \
   --config configs/synthetic_solver_benchmark.yaml \
   --output-root "${BENCHMARK_OUTPUT_ROOT}"
