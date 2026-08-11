@@ -93,6 +93,7 @@ def _raw_fixture() -> pd.DataFrame:
                                 "registered_repetition": True,
                                 "backend": backend,
                                 "canonical_sha256": canonical_hash,
+                                "execution_sha": "fixture-execution-sha",
                                 "status": "optimal" if strict else "failed",
                                 "raw_status": (
                                     "Optimal" if cuopt else "solved"

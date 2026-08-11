@@ -12,6 +12,7 @@ import platform
 import signal
 import socket
 import subprocess
+import sys
 import threading
 import time
 from contextlib import contextmanager
@@ -342,16 +343,20 @@ def _read_rss_bytes() -> int | None:
 class MemorySampler:
     """Poll current-process host and GPU memory during one backend call."""
 
-    def __init__(self, interval_seconds: float = 0.01):
+    def __init__(self, interval_seconds: float = 0.01, track_gpu: bool = False):
         self.interval_seconds = interval_seconds
+        self.track_gpu = track_gpu
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self.peak_host: int | None = None
         self.peak_gpu: int | None = None
         self._pynvml: Any = None
         self._handles: list[Any] = []
+        self._cuda_runtime: Any = None
 
     def _initialize_gpu(self) -> None:
+        if not self.track_gpu:
+            return
         try:
             import pynvml
 
@@ -364,33 +369,49 @@ class MemorySampler:
         except Exception:
             self._pynvml = None
             self._handles = []
+        if self._pynvml is None:
+            try:
+                from cuda.bindings import runtime
+
+                error, _free, _total = runtime.cudaMemGetInfo()
+                if int(error) == 0:
+                    self._cuda_runtime = runtime
+            except Exception:
+                self._cuda_runtime = None
 
     def _gpu_memory(self) -> int | None:
-        if self._pynvml is None or not self._handles:
-            return None
-        try:
-            total = 0
-            found = False
-            for handle in self._handles:
-                processes = list(
-                    self._pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
-                )
-                graphics = getattr(
-                    self._pynvml, "nvmlDeviceGetGraphicsRunningProcesses", None
-                )
-                if graphics is not None:
-                    processes.extend(graphics(handle))
-                for process in processes:
-                    if (
-                        int(process.pid) == os.getpid()
-                        and process.usedGpuMemory is not None
-                        and int(process.usedGpuMemory) >= 0
-                    ):
-                        total += int(process.usedGpuMemory)
-                        found = True
-            return total if found else 0
-        except Exception:
-            return None
+        if self._pynvml is not None and self._handles:
+            try:
+                total = 0
+                found = False
+                for handle in self._handles:
+                    processes = list(
+                        self._pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
+                    )
+                    graphics = getattr(
+                        self._pynvml, "nvmlDeviceGetGraphicsRunningProcesses", None
+                    )
+                    if graphics is not None:
+                        processes.extend(graphics(handle))
+                    for process in processes:
+                        if (
+                            int(process.pid) == os.getpid()
+                            and process.usedGpuMemory is not None
+                            and int(process.usedGpuMemory) >= 0
+                        ):
+                            total += int(process.usedGpuMemory)
+                            found = True
+                return total if found else 0
+            except Exception:
+                return None
+        if self._cuda_runtime is not None:
+            try:
+                error, free, total = self._cuda_runtime.cudaMemGetInfo()
+                if int(error) == 0:
+                    return int(total - free)
+            except Exception:
+                return None
+        return None
 
     def _sample(self) -> None:
         host = _read_rss_bytes()
@@ -461,7 +482,7 @@ def solve_osqp(
     problem: CanonicalProblem, config: dict[str, Any]
 ) -> BackendMeasurement:
     timeout = float(config["canonical_problem"]["timeout_seconds"])
-    sampler = MemorySampler()
+    sampler = MemorySampler(track_gpu=False)
     start = time.perf_counter()
     try:
         with sampler:
@@ -622,7 +643,7 @@ def solve_cuopt(
     problem: CanonicalProblem, config: dict[str, Any]
 ) -> BackendMeasurement:
     timeout = float(config["canonical_problem"]["timeout_seconds"])
-    sampler = MemorySampler()
+    sampler = MemorySampler(track_gpu=True)
     start = time.perf_counter()
     try:
         with sampler:
@@ -721,6 +742,7 @@ def _measurement_row(
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "host": socket.gethostname(),
         "partition": os.environ.get("SLURM_JOB_PARTITION"),
+        "execution_sha": os.environ.get("EXPECTED_SHA"),
     }
 
 
@@ -796,6 +818,10 @@ def run_cold_benchmark(
     repetitions = int(canonical["registered_repetitions"])
     warmups = int(canonical["warmup_repetitions"])
     solver = {"OSQP": solve_osqp, "cuOpt": solve_cuopt}
+    cuopt_measurements = 0
+    restart_limit = int(
+        config.get("execution", {}).get("max_cuopt_measurements_per_process", 0)
+    )
     for backend in backends:
         for family in FAMILY_ORDER:
             for n_variables in canonical["sizes"]:
@@ -833,6 +859,23 @@ def run_cold_benchmark(
                             f"rep={repetition}: {measurement.status}",
                             flush=True,
                         )
+                        if backend == "cuOpt":
+                            cuopt_measurements += 1
+                            if restart_limit and cuopt_measurements >= restart_limit:
+                                print(
+                                    "Restarting the cuOpt worker process after "
+                                    f"{cuopt_measurements} persisted measurements",
+                                    flush=True,
+                                )
+                                os.execv(
+                                    sys.executable,
+                                    [
+                                        sys.executable,
+                                        "-m",
+                                        "benchmarks.synthetic_solver_benchmark",
+                                        *sys.argv[1:],
+                                    ],
+                                )
     return pd.DataFrame.from_records(rows)
 
 
@@ -880,6 +923,7 @@ def _update_measurement_row(
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "host": socket.gethostname(),
         "partition": os.environ.get("SLURM_JOB_PARTITION"),
+        "execution_sha": os.environ.get("EXPECTED_SHA"),
     }
 
 

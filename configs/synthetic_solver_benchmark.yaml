@@ -48,6 +48,8 @@ solver_contract:
     adaptive_rho: true
   cuopt:
     interface: direct_python
+    method: 3
+    log_to_console: false
     absolute_primal_tolerance: 1.0e-7
     relative_primal_tolerance: 1.0e-7
     absolute_dual_tolerance: 1.0e-7
@@ -78,6 +80,7 @@ execution:
   memory: 128G
   time_limit: "08:00:00"
   no_solver_fallback: true
+  max_cuopt_measurements_per_process: 24
   speedup_definition: OSQP time / cuOpt time
   timing_definition: >-
     End-to-end timing starts with canonical arrays resident in host memory and

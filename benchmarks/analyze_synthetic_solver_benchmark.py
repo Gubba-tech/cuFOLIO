@@ -147,6 +147,7 @@ def load_registered_pairs(
         "backend",
         "registered_repetition",
         "canonical_sha256",
+        "execution_sha",
         "strict_optimal",
         "correctness_pass",
         "censored",
@@ -184,6 +185,9 @@ def load_registered_pairs(
     pairs["same_canonical_instance"] = (
         pairs["canonical_sha256_osqp"] == pairs["canonical_sha256_cuopt"]
     ) & pairs["canonical_sha256_osqp"].notna()
+    pairs["same_execution_sha"] = (
+        pairs["execution_sha_osqp"] == pairs["execution_sha_cuopt"]
+    ) & pairs["execution_sha_osqp"].notna()
     pairs["canonical_objective_gap"] = (
         pairs["objective_value_osqp"] - pairs["objective_value_cuopt"]
     ).abs()
@@ -204,6 +208,7 @@ def load_registered_pairs(
     pairs["common_correct"] = (
         (pairs["_merge"] == "both")
         & pairs["same_canonical_instance"]
+        & pairs["same_execution_sha"]
         & pairs["strict_optimal_osqp"]
         & pairs["strict_optimal_cuopt"]
         & pairs["correctness_pass_osqp"]
@@ -1158,6 +1163,10 @@ def reconciliation_audit(
         ),
         "all_included_pairs_use_same_canonical_instance": bool(
             pairs.loc[pairs["common_correct"], "same_canonical_instance"].all()
+        ),
+        "all_registered_rows_use_one_execution_sha": bool(
+            registered["execution_sha"].notna().all()
+            and registered["execution_sha"].nunique() == 1
         ),
     }
     return {
